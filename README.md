@@ -1,4 +1,4 @@
-# GitHub Stars Manager
+# GitHub Observe
 
 智能管理你的 GitHub Stars，通过 AI 自动分析和分类项目。
 

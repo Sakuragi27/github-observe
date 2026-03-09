@@ -49,7 +49,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full p-8 bg-white rounded-lg shadow">
         <h1 className="text-2xl font-bold text-center mb-6">
-          GitHub Stars Manager
+          GitHub Observe
         </h1>
         
         <div className="flex mb-6 border-b">

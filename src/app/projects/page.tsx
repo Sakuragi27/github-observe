@@ -118,7 +118,7 @@ export default function ProjectsPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">GitHub Stars Manager</h1>
+          <h1 className="text-xl font-bold">GitHub Observe</h1>
           <div className="flex gap-4">
             <button onClick={() => router.push('/tags')} className="text-purple-500 hover:text-purple-600">
               标签管理
