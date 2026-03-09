@@ -8,25 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   passwordHash  String
   githubToken   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   projects      Project[]
 }
 
 model Project {
-  id              String      @id @default(cuid())
+  id              String       @id @default(cuid())
   userId          String
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   githubId        Int?
   name            String
   fullName        String
   description     String?
   htmlUrl         String
-  stargazersCount Int         @default(0)
+  stargazersCount Int          @default(0)
   language        String?
   topics          String?
   analysis        String?
