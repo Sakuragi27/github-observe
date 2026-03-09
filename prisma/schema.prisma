@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  githubToken   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  projects      Project[]
+}
+
+model Project {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  githubId        Int?
+  name            String
+  fullName        String
+  description     String?
+  htmlUrl         String
+  stargazersCount Int         @default(0)
+  language        String?
+  topics          String?
+  analysis        String?
+  solvedProblem   String?
+  starredAt       DateTime?
+  syncedAt        DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  tags            ProjectTag[]
+
+  @@index([userId])
+}
+
+model Tag {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  slug      String       @unique
+  category  String?
+  count     Int          @default(0)
+  createdAt DateTime     @default(now())
+  projects  ProjectTag[]
+
+  @@index([slug])
+}
+
+model ProjectTag {
+  id        String   @id @default(cuid())
+  projectId String
+  tagId     String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, tagId])
+}
