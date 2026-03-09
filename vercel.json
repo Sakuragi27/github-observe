@@ -1,0 +1,14 @@
+{
+  "buildCommand": "prisma generate && next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["sin1"],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "VOLCANO_API_KEY": "@volcano_api_key",
+    "VOLCANO_ENDPOINT_ID": "@volcano_endpoint_id",
+    "ENCRYPTION_KEY": "@encryption_key"
+  }
+}

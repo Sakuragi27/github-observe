@@ -3,10 +3,23 @@ import { prisma } from '@/lib/prisma'
 import { getAllUserStars, getRepoReadme } from '@/lib/github'
 import { analyzeProject } from '@/lib/ai'
 import { decrypt } from '@/lib/encrypt'
+import { getUserFromRequest } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, force = false } = await request.json()
+    const body = await request.json()
+    
+    // 优先从 token 获取 userId
+    const authUser = getUserFromRequest(request)
+    const userId = authUser?.userId || body.userId
+    const force = body.force || false
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: '未授权或缺少用户ID' },
+        { status: 401 }
+      )
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

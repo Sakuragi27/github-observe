@@ -1,17 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { encrypt } from '@/lib/encrypt'
-import { z } from 'zod'
-
-const tokenSchema = z.object({
-  userId: z.string(),
-  githubToken: z.string().min(1),
-})
+import { getUserFromRequest } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, githubToken } = tokenSchema.parse(body)
+    
+    // 优先从 token 获取 userId
+    const authUser = getUserFromRequest(request)
+    const userId = authUser?.userId || body.userId
+    const githubToken = body.githubToken
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: '未授权或缺少用户ID' },
+        { status: 401 }
+      )
+    }
+
+    if (!githubToken) {
+      return NextResponse.json(
+        { error: '缺少 GitHub Token' },
+        { status: 400 }
+      )
+    }
 
     const encryptedToken = encrypt(githubToken)
 
@@ -20,9 +33,12 @@ export async function POST(request: NextRequest) {
       data: { githubToken: encryptedToken },
     })
 
-    return NextResponse.json({ success: true, message: 'Token 保存成功' })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Save token error:', error)
-    return NextResponse.json({ error: '保存失败' }, { status: 500 })
+    return NextResponse.json(
+      { error: '保存 Token 失败' },
+      { status: 500 }
+    )
   }
 }

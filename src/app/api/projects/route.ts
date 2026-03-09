@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getUserFromRequest } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
+    
+    // 优先从 token 获取 userId，其次从 query 参数
+    const authUser = getUserFromRequest(request)
+    const userId = authUser?.userId || searchParams.get('userId')
+    
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const search = searchParams.get('search') || ''
@@ -12,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: '缺少 userId' },
-        { status: 400 }
+        { error: '未授权或缺少用户ID' },
+        { status: 401 }
       )
     }
 
