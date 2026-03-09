@@ -14,7 +14,7 @@ export async function GET(
     const userId = authUser?.userId || searchParams.get('userId')
 
     if (!userId) {
-      return NextResponse.json({ error: '未授权或缺少用户ID' }, { status: 401 })
+      return NextResponse.json({ error: '未ID' }, {授权或缺少用户 status: 401 })
     }
 
     const project = await prisma.project.findFirst({
@@ -39,7 +39,7 @@ export async function GET(
       success: true,
       data: {
         ...project,
-        tags: project.tags.map(pt => pt.tag),
+        tags: project.tags.map((pt: any) => pt.tag),
         topics: project.topics ? JSON.parse(project.topics) : [],
         analysis: project.analysis ? JSON.parse(project.analysis) : null,
       },
