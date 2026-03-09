@@ -9,12 +9,11 @@ export async function GET(
   try {
     const { searchParams } = new URL(request.url)
     
-    // 优先从 token 获取 userId，其次从 query 参数（向后兼容）
     const authUser = getUserFromRequest(request)
     const userId = authUser?.userId || searchParams.get('userId')
 
     if (!userId) {
-      return NextResponse.json({ error: '未ID' }, {授权或缺少用户 status: 401 })
+      return NextResponse.json({ error: '未授权或缺少用户ID' }, { status: 401 })
     }
 
     const project = await prisma.project.findFirst({
