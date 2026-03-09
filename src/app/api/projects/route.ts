@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     
-    // 优先从 token 获取 userId，其次从 query 参数
     const authUser = getUserFromRequest(request)
     const userId = authUser?.userId || searchParams.get('userId')
     
@@ -24,7 +23,6 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // 构建查询条件
     const where: any = { userId }
 
     if (search) {
@@ -64,22 +62,24 @@ export async function GET(request: NextRequest) {
       prisma.project.count({ where }),
     ])
 
+    const projectList = projects.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      fullName: p.fullName,
+      description: p.description,
+      htmlUrl: p.htmlUrl,
+      stargazersCount: p.stargazersCount,
+      language: p.language,
+      topics: p.topics ? JSON.parse(p.topics) : [],
+      solvedProblem: p.solvedProblem,
+      tags: p.tags.map((t: any) => t.tag),
+      starredAt: p.starredAt,
+    }))
+
     return NextResponse.json({
       success: true,
       data: {
-        projects: projects.map((p) => ({
-          id: p.id,
-          name: p.name,
-          fullName: p.fullName,
-          description: p.description,
-          htmlUrl: p.htmlUrl,
-          stargazersCount: p.stargazersCount,
-          language: p.language,
-          topics: p.topics ? JSON.parse(p.topics) : [],
-          solvedProblem: p.solvedProblem,
-          tags: p.tags.map((t) => t.tag),
-          starredAt: p.starredAt,
-        })),
+        projects: projectList,
         pagination: {
           page,
           limit,

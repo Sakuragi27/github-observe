@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: tags.map((tag) => ({
+      data: tags.map((tag: any) => ({
         id: tag.id,
         name: tag.name,
         slug: tag.slug,
