@@ -1,280 +1,244 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-
-interface Tag {
-  id: string
-  name: string
-  slug: string
-  count?: number
-}
+import Link from 'next/link'
 
 interface Project {
   id: string
   name: string
   fullName: string
-  description: string | null
+  description: string
   htmlUrl: string
   stargazersCount: number
-  language: string | null
-  solvedProblem: string | null
-  tags: Tag[]
-  starredAt: string | null
+  language: string
+  topics: string[]
+  tags: { id: string; name: string; slug: string }[]
+  starredAt: string
 }
 
-function getAuthHeaders(): HeadersInit {
-  const userStr = localStorage.getItem('user')
-  if (!userStr) return {}
-  
-  const user = JSON.parse(userStr)
-  if (!user.token) return {}
-  
-  return {
-    'Authorization': `Bearer ${user.token}`,
-  }
+interface Tag {
+  id: string
+  name: string
+  slug: string
+  count: number
 }
 
 export default function ProjectsPage() {
-  const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
-  const [allTags, setAllTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [tags, setTags] = useState<Tag[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const user = localStorage.getItem('user')
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    fetchTags()
-    fetchProjects()
-  }, [router])
+    checkAuth()
+  }, [])
 
-  const fetchTags = async () => {
-    try {
-      const res = await fetch('/api/tags', {
-        headers: getAuthHeaders(),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setAllTags(data.data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch tags:', err)
+  useEffect(() => {
+    if (user?.id) {
+      fetchProjects()
+      fetchTags()
     }
-  }
+  }, [user, selectedTags])
 
-  const fetchProjects = async (tags: string[] = [], searchTerm: string = '') => {
-    setLoading(true)
+  const checkAuth = async () => {
     try {
-      const params = new URLSearchParams({
-        ...(searchTerm && { search: searchTerm }),
-        ...(tags.length > 0 && { tags: tags.join(',') }),
-      })
-      
-      const res = await fetch('/api/projects?' + params, {
-        headers: getAuthHeaders(),
-      })
+      const res = await fetch('/api/user/token')
       const data = await res.json()
-      
-      if (res.ok) {
-        setProjects(data.data.projects)
-      } else {
-        if (res.status === 401) {
-          router.push('/login')
-        }
+      if (data.success) {
+        setUser(data.data?.user)
       }
-    } catch (err) {
-      console.error('Failed to fetch projects:', err)
+    } catch (e) {
+      console.error(e)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    fetchProjects(selectedTags, search)
+  const fetchProjects = async () => {
+    try {
+      const tagParam = selectedTags.length > 0 ? `&tags=${selectedTags.join(',')}` : ''
+      const res = await fetch(`/api/projects?userId=${user?.id}${tagParam}`)
+      const data = await res.json()
+      if (data.success) {
+        setProjects(data.data.projects)
+      }
+    } catch (e) {
+      console.error(e)
+    }
   }
 
-  const toggleTag = (tagSlug: string) => {
-    const newSelectedTags = selectedTags.includes(tagSlug)
-      ? selectedTags.filter(t => t !== tagSlug)
-      : [...selectedTags, tagSlug]
-    
-    setSelectedTags(newSelectedTags)
-    fetchProjects(newSelectedTags, search)
+  const fetchTags = async () => {
+    try {
+      const res = await fetch('/api/tags')
+      const data = await res.json()
+      if (data.success) {
+        setTags(data.data)
+      }
+    } catch (e) {
+      console.error(e)
+    }
   }
 
-  const clearFilters = () => {
-    setSelectedTags([])
-    setSearch('')
-    fetchProjects([], '')
+  const toggleTag = (slug: string) => {
+    setSelectedTags(prev => 
+      prev.includes(slug) 
+        ? prev.filter(t => t !== slug)
+        : [...prev, slug]
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">请先登录</p>
+          <Link href="/login" className="text-blue-600 hover:underline">去登录</Link>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">GitHub Observe</h1>
-          <div className="flex gap-4">
-            <button onClick={() => router.push('/tags')} className="text-purple-500 hover:text-purple-600">
-              标签管理
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Link href="/" className="text-xl font-bold text-blue-600">GitHub Observe</Link>
+            <span className="text-gray-600">Stars ({projects.length})</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button className="p-2 hover:bg-gray-100 rounded-lg">
+              🔍
             </button>
-            <button onClick={() => router.push('/settings')} className="text-blue-500 hover:text-blue-600">
-              设置
-            </button>
-            <button onClick={() => { localStorage.clear(); router.push('/login') }} className="text-gray-500 hover:text-gray-600">
-              退出
+            <button 
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              {viewMode === 'grid' ? '☰' : '⊞'}
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* 搜索栏 */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="搜索项目名称、描述..."
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button type="submit" className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-              搜索
+      {/* Active Filters */}
+      {selectedTags.length > 0 && (
+        <div className="bg-white border-b px-4 py-2 flex items-center gap-2">
+          <span className="text-sm text-gray-600">活跃筛选：</span>
+          {selectedTags.map(tag => (
+            <button
+              key={tag}
+              onClick={() => toggleTag(tag)}
+              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm flex items-center gap-1"
+            >
+              {tag} ✕
             </button>
-            {(selectedTags.length > 0 || search) && (
-              <button 
-                type="button" 
-                onClick={clearFilters} 
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                清除筛选
-              </button>
-            )}
-          </div>
-        </form>
+          ))}
+          <button 
+            onClick={() => setSelectedTags([])}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            清除全部
+          </button>
+        </div>
+      )}
 
-        {/* 标签筛选区 */}
-        {allTags.length > 0 && (
-          <div className="mb-6 bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              标签筛选 {selectedTags.length > 0 && `(已选 ${selectedTags.length})`}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {allTags.slice(0, 20).map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => toggleTag(tag.slug)}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    selectedTags.includes(tag.slug)
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {tag.name}
-                  {tag.count !== undefined && ` (${tag.count})`}
-                </button>
-              ))}
-              {allTags.length > 20 && (
-                <button
-                  onClick={() => router.push('/tags')}
-                  className="px-3 py-1.5 rounded-full text-sm bg-purple-100 text-purple-700 hover:bg-purple-200"
-                >
-                  查看全部标签 →
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 项目列表 */}
-        {loading ? (
-          <div className="text-center py-12 text-gray-500">加载中...</div>
-        ) : projects.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">
-              {selectedTags.length > 0 || search 
-                ? '没有找到匹配的项目' 
-                : '暂无项目，请先同步 GitHub Stars'}
-            </p>
-            {!selectedTags.length && !search && (
-              <button
-                onClick={() => router.push('/settings')}
-                className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-              >
-                前往同步
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="mb-4 text-sm text-gray-600">
-              找到 {projects.length} 个项目
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((project) => (
-                <div
-                  key={project.id}
-                  className="bg-white p-4 rounded-lg shadow hover:shadow-md transition cursor-pointer"
-                  onClick={() => router.push(`/project/${project.id}`)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-blue-600 truncate">{project.name}</h3>
-                    <span className="text-yellow-500 text-sm whitespace-nowrap ml-2">
-                      ★ {project.stargazersCount}
-                    </span>
-                  </div>
-                  
-                  <p className="text-xs text-gray-400 mb-2">{project.fullName}</p>
-                  
-                  {project.description && (
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                      {project.description}
-                    </p>
-                  )}
-                  
-                  {project.solvedProblem && (
-                    <p className="text-green-600 text-sm mb-2 line-clamp-2">
-                      💡 {project.solvedProblem}
-                    </p>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-1 mt-2 mb-2">
-                    {project.tags.slice(0, 5).map((tag) => (
-                      <span 
-                        key={tag.id} 
-                        className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded"
-                      >
-                        #{tag.name}
-                      </span>
-                    ))}
-                    {project.tags.length > 5 && (
-                      <span className="px-2 py-0.5 bg-gray-50 text-gray-500 text-xs rounded">
-                        +{project.tags.length - 5}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {project.language && (
-                    <div className="text-gray-500 text-xs mt-2">
-                      📦 {project.language}
-                    </div>
-                  )}
-
-                  <div className="mt-3 pt-3 border-t text-xs text-gray-400 text-right">
-                    点击查看详情 →
-                  </div>
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex gap-6">
+          {/* Sidebar Filters */}
+          <aside className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="font-semibold text-gray-900 mb-4">筛选</h3>
+              <div>
+                <h4 className="text-sm text-gray-600 mb-2">标签</h4>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map(tag => (
+                    <button
+                      key={tag.id}
+                      onClick={() => toggleTag(tag.slug)}
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        selectedTags.includes(tag.slug)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {tag.name} ({tag.count})
+                    </button>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </>
-        )}
-      </main>
+          </aside>
+
+          {/* Projects Grid/List */}
+          <main className="flex-1">
+            {loading ? (
+              <div className="text-center py-12 text-gray-500">加载中...</div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                暂无项目，请先同步 GitHub Stars
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map(project => (
+                  <div key={project.id} className="bg-white rounded-lg shadow p-4 hover:shadow-md transition">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                      <a href={project.htmlUrl} target="_blank" className="text-gray-400 hover:text-gray-600">🔗</a>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span>⭐ {project.stargazersCount}</span>
+                        {project.language && <span>• {project.language}</span>}
+                      </div>
+                    </div>
+                    {project.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-3">
+                        {project.tags.map((tag: any) => (
+                          <span key={tag.id} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <Link 
+                      href={`/project/${project.id}`}
+                      className="mt-3 block text-center text-blue-600 hover:text-blue-700 text-sm"
+                    >
+                      查看详情 →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projects.map(project => (
+                  <div key={project.id} className="bg-white rounded-lg shadow p-4 hover:shadow-md transition">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{project.fullName}</h3>
+                        <p className="text-sm text-gray-600">{project.description}</p>
+                      </div>
+                      <div className="flex items-center gap-4 ml-4">
+                        <span className="text-lg">⭐ {project.stargazersCount}</span>
+                        <Link 
+                          href={`/project/${project.id}`}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          查看
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
     </div>
   )
 }
