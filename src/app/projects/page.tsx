@@ -268,7 +268,7 @@ export default function ProjectsPage() {
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredProjects.map(project => (
-                <div key={project.id} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 hover:bg-white/15 transition cursor-pointer group">
+                <div key={project.id} onClick={() => router.push(`/project/${project.id}`)} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 hover:bg-white/15 transition cursor-pointer group">
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center text-2xl">
                       📂
@@ -301,7 +301,7 @@ export default function ProjectsPage() {
           ) : (
             <div className="space-y-3">
               {filteredProjects.map(project => (
-                <div key={project.id} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 hover:bg-white/15 transition cursor-pointer">
+                <div key={project.id} onClick={() => router.push(`/project/${project.id}`)} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 hover:bg-white/15 transition cursor-pointer">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center text-2xl">
                       📂
