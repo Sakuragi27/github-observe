@@ -27,7 +27,7 @@ export default function LoginPage() {
       const data = await res.json()
       
       if (data.success) {
-        localStorage.setItem('token', data.data.token)
+        localStorage.setItem('token', data.token)
         router.push('/projects')
       } else {
         setError(data.error || '登录失败')
@@ -53,7 +53,7 @@ export default function LoginPage() {
       const data = await res.json()
       
       if (data.success) {
-        localStorage.setItem('token', data.data.token)
+        localStorage.setItem('token', data.token)
         router.push('/projects')
       } else {
         setError(data.error || '登录失败')
