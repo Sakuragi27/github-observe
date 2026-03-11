@@ -34,7 +34,12 @@ export async function POST(request: NextRequest) {
 
     const token = decrypt(user.githubToken)
     // 先只获取前30个Stars用于测试
+    console.log('=== SYNC DEBUG ===')
+    console.log('User ID:', userId)
+    console.log('Has GitHub Token:', !!user.githubToken)
+    
     const stars = (await getAllUserStars(token)).slice(0, 30)
+    console.log('Stars count:', stars.length)
 
     let newCount = 0
     let updatedCount = 0
