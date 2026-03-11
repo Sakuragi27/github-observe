@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
     }
 
     const token = decrypt(user.githubToken)
-    const stars = await getAllUserStars(token)
+    // 先只获取前30个Stars用于测试
+    const stars = (await getAllUserStars(token)).slice(0, 30)
 
     let newCount = 0
     let updatedCount = 0
