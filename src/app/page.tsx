@@ -28,12 +28,18 @@ const recommendedProjects = [
 export default function HomePage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !!localStorage.getItem("token")
-    }
-    return false
-  })
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    setIsLoggedIn(!!localStorage.getItem("token"))
+  }, [])
+
+  // 防止闪烁
+  if (!mounted) {
+    return null
+  }
   
 
 
