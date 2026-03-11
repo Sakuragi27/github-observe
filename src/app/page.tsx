@@ -28,22 +28,15 @@ const recommendedProjects = [
 export default function HomePage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !!localStorage.getItem("token")
+    }
+    return false
+  })
+  
 
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    setIsLoggedIn(!!token)
-    setLoading(false)
-  }, [])
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">加载中...</div>
-      </main>
-    )
-  }
 
   // 未登录显示引导页
   if (!isLoggedIn) {
