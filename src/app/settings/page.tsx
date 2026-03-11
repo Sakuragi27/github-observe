@@ -1,37 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-function getAuthHeaders(): HeadersInit {
-  const userStr = localStorage.getItem('user')
-  if (!userStr) return {}
-  
-  const user = JSON.parse(userStr)
-  if (!user.token) return {}
-  
-  return {
-    'Authorization': `Bearer ${user.token}`,
-    'Content-Type': 'application/json',
-  }
-}
 
 export default function SettingsPage() {
   const router = useRouter()
   const [token, setToken] = useState('')
   const [loading, setLoading] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState('')
-  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 })
-  const [syncMode, setSyncMode] = useState<'full' | 'incremental'>('incremental')
-
-  useEffect(() => {
-    const userStr = localStorage.getItem('user')
-    if (!userStr) {
-      router.push('/login')
-      return
-    }
-  }, [router])
+  const [syncMode, setSyncMode] = useState<'incremental' | 'full'>('incremental')
+  const [darkMode, setDarkMode] = useState(true)
+  const [autoSync, setAutoSync] = useState(false)
 
   const handleSaveToken = async () => {
     if (!token) return
@@ -41,7 +20,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch('/api/user/token', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ githubToken: token }),
       })
       
@@ -60,166 +39,185 @@ export default function SettingsPage() {
     }
   }
 
-  const handleSync = async () => {
-    setSyncing(true)
-    setMessage('')
-    setSyncProgress({ current: 0, total: 0 })
-    
-    try {
-      const res = await fetch('/api/sync', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ 
-          force: syncMode === 'full'
-        }),
-      })
-      
-      const data = await res.json()
-      
-      if (res.ok) {
-        const { total, newCount, updatedCount } = data.data
-        setSyncProgress({ current: total, total })
-        
-        let msg = '✅ 同步完成！'
-        if (newCount > 0) msg += ` 新增 ${newCount} 个项目`
-        if (updatedCount > 0) msg += ` 更新 ${updatedCount} 个项目`
-        if (newCount === 0 && updatedCount === 0) msg += ' 没有新项目'
-        
-        setMessage(msg)
-      } else {
-        setMessage('❌ ' + (data.error || '同步失败'))
-      }
-    } catch (err) {
-      setMessage('❌ 同步失败，请重试')
-    } finally {
-      setSyncing(false)
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    router.push('/login')
   }
 
-  const progressPercentage = syncProgress.total > 0 
-    ? (syncProgress.current / syncProgress.total) * 100 
-    : 0
-
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">设置</h1>
-          <button 
-            onClick={() => router.push('/projects')} 
-            className="text-blue-500 hover:text-blue-600"
-          >
-            返回项目列表
-          </button>
-        </div>
-        
-        {/* GitHub Token 配置 */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="text-lg font-semibold mb-4">GitHub Token 配置</h2>
-          <p className="text-gray-600 text-sm mb-4">
-            请输入您的 GitHub Personal Access Token，用于获取您的 Stars 列表。
-            <a 
-              href="https://github.com/settings/tokens" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-500 ml-2"
-            >
-              创建 Token →
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* 动态背景 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 -left-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 -right-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="relative flex min-h-screen">
+        {/* 侧边栏 */}
+        <aside className="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col">
+          <div className="p-6 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+              </div>
+              <span className="text-white font-bold text-lg">Observe</span>
+            </div>
+          </div>
+
+          <nav className="flex-1 p-4 space-y-2">
+            <a href="/" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
+              <span>🏠</span>
+              <span>首页</span>
             </a>
-          </p>
-          <input
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="ghp_xxxxxxxxxxxx"
-            className="w-full px-3 py-2 border rounded-lg mb-4"
-          />
-          <button
-            onClick={handleSaveToken}
-            disabled={loading || !token}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? '保存中...' : '保存 Token'}
-          </button>
-        </div>
+            <a href="/projects" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
+              <span>📂</span>
+              <span>项目</span>
+            </a>
+            <a href="/sync" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
+              <span>🔄</span>
+              <span>同步</span>
+            </a>
+            <a href="/tags" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
+              <span>🏷️</span>
+              <span>标签</span>
+            </a>
+            <a href="/settings" className="flex items-center gap-3 px-4 py-3 bg-white/10 text-white rounded-xl">
+              <span>⚙️</span>
+              <span>设置</span>
+            </a>
+          </nav>
 
-        {/* 同步 Stars */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">同步 Stars</h2>
-          <p className="text-gray-600 text-sm mb-4">
-            点击按钮同步您的 GitHub Stars，系统将自动使用 AI 分析并分类每个项目。
-          </p>
-          
-          {/* 同步模式选择 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              同步模式
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  value="incremental"
-                  checked={syncMode === 'incremental'}
-                  onChange={(e) => setSyncMode(e.target.value as 'incremental')}
-                  className="mr-2"
-                  disabled={syncing}
-                />
-                <span className="text-sm">增量同步（仅新项目）</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  value="full"
-                  checked={syncMode === 'full'}
-                  onChange={(e) => setSyncMode(e.target.value as 'full')}
-                  className="mr-2"
-                  disabled={syncing}
-                />
-                <span className="text-sm">全量同步（所有项目）</span>
-              </label>
+          <div className="p-4 border-t border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white font-bold">
+                T
+              </div>
+              <div className="flex-1">
+                <div className="text-white text-sm font-medium">Tester</div>
+                <div className="text-white/40 text-xs">tester@test.com</div>
+              </div>
+              <button onClick={handleLogout} className="text-white/40 hover:text-white">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
             </div>
           </div>
+        </aside>
 
-          {/* 进度条 */}
-          {syncing && (
-            <div className="mb-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>同步进度</span>
-                <span>{syncProgress.current} / {syncProgress.total || '...'}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="bg-green-500 h-2.5 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                />
+        {/* 主内容区 */}
+        <main className="flex-1 p-8 overflow-auto">
+          <h1 className="text-3xl font-bold text-white mb-8">设置</h1>
+
+          <div className="space-y-6 max-w-2xl">
+            {/* Token 配置 */}
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-white mb-4">GitHub Token 配置</h2>
+              <p className="text-white/40 text-sm mb-4">
+                请输入您的 GitHub Personal Access Token，用于获取您的 Stars 列表。
+                <a href="https://github.com/settings/tokens" target="_blank" className="text-purple-400 ml-2 hover:underline">
+                  创建 Token →
+                </a>
+              </p>
+              <input
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="ghp_xxxxxxxxxxxx"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 mb-4 focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+              />
+              <button
+                onClick={handleSaveToken}
+                disabled={loading || !token}
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50"
+              >
+                {loading ? '保存中...' : '保存 Token'}
+              </button>
+              {message && (
+                <p className={`mt-3 text-sm ${message.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                  {message}
+                </p>
+              )}
+            </div>
+
+            {/* 同步设置 */}
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-white mb-4">同步设置</h2>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-white font-medium">自动同步</div>
+                    <div className="text-white/40 text-sm">每天自动同步 GitHub Stars</div>
+                  </div>
+                  <button
+                    onClick={() => setAutoSync(!autoSync)}
+                    className={`w-12 h-6 rounded-full transition-colors ${autoSync ? 'bg-purple-500' : 'bg-white/20'}`}
+                  >
+                    <div className={`w-5 h-5 bg-white rounded-full transition-transform ${autoSync ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                <div>
+                  <div className="text-white font-medium mb-3">同步模式</div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setSyncMode('incremental')}
+                      className={`px-4 py-2 rounded-xl text-sm transition ${
+                        syncMode === 'incremental' 
+                          ? 'bg-purple-500 text-white' 
+                          : 'bg-white/10 text-white/60 hover:bg-white/20'
+                      }`}
+                    >
+                      增量同步
+                    </button>
+                    <button
+                      onClick={() => setSyncMode('full')}
+                      className={`px-4 py-2 rounded-xl text-sm transition ${
+                        syncMode === 'full' 
+                          ? 'bg-purple-500 text-white' 
+                          : 'bg-white/10 text-white/60 hover:bg-white/20'
+                      }`}
+                    >
+                      全量同步
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
 
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
-              syncing 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-green-500 hover:bg-green-600'
-            }`}
-          >
-            {syncing ? '同步中...' : `开始${syncMode === 'full' ? '全量' : '增量'}同步`}
-          </button>
-        </div>
+            {/* 外观设置 */}
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-white mb-4">外观设置</h2>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-medium">深色模式</div>
+                  <div className="text-white/40 text-sm">使用深色主题</div>
+                </div>
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className={`w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-purple-500' : 'bg-white/20'}`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+            </div>
 
-        {/* 消息提示 */}
-        {message && (
-          <div className={`mt-4 p-4 rounded-lg ${
-            message.startsWith('✅') 
-              ? 'bg-green-50 text-green-700' 
-              : 'bg-red-50 text-red-700'
-          }`}>
-            {message}
+            {/* 账号操作 */}
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-white mb-4">账号</h2>
+              <button
+                onClick={handleLogout}
+                className="px-6 py-2.5 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition"
+              >
+                退出登录
+              </button>
+            </div>
           </div>
-        )}
+        </main>
       </div>
     </div>
   )
