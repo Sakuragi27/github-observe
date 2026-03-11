@@ -31,7 +31,26 @@ export default function SettingsPage() {
       const data = await res.json()
       
       if (res.ok) {
-        setMessage('✅ Token 保存成功！')
+        setMessage('✅ Token 保存成功！正在同步...')
+        // 保存成功后自动触发同步
+        try {
+          const syncRes = await fetch('/api/sync', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ force: true })
+          })
+          const syncData = await syncRes.json()
+          if (syncRes.ok) {
+            setMessage('✅ Token 保存成功！已同步 ' + (syncData.newCount || 0) + ' 个项目')
+          } else {
+            setMessage('✅ Token 保存成功！同步失败: ' + (syncData.error || '未知错误'))
+          }
+        } catch (syncErr) {
+          setMessage('✅ Token 保存成功！同步出错，请手动同步')
+        }
         setToken('')
       } else {
         setMessage('❌ ' + (data.error || '保存失败'))
