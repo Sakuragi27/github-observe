@@ -28,10 +28,16 @@ export async function POST(request: NextRequest) {
 
     const encryptedToken = encrypt(githubToken)
 
+    console.log('=== SAVE TOKEN DEBUG ===')
+    console.log('userId:', userId)
+    console.log('githubToken length:', githubToken?.length)
+    
     await prisma.user.update({
       where: { id: userId },
       data: { githubToken: encryptedToken },
     })
+    
+    console.log('Token saved successfully')
 
     return NextResponse.json({ success: true })
   } catch (error) {
