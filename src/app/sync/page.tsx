@@ -17,18 +17,27 @@ export default function SyncPage() {
   const handleSync = async () => {
     setSyncing(true)
     setMessage('')
-    setProgress({ current: 0, total: 100 })
+    setProgress({ current: 10, total: 100 })
     
     try {
       const token = localStorage.getItem('token')
+      setProgress({ current: 20, total: 100 })
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
+      
       const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ force: true })
+        body: JSON.stringify({ force: true }),
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
+      setProgress({ current: 80, total: 100 })
       
       const data = await res.json()
       
@@ -38,8 +47,12 @@ export default function SyncPage() {
       } else {
         setMessage('❌ ' + (data.error || '同步失败'))
       }
-    } catch (err) {
-      setMessage('❌ 同步出错，请重试')
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setMessage('❌ 同步超时，请重试')
+      } else {
+        setMessage('❌ 同步出错，请重试')
+      }
     } finally {
       setSyncing(false)
     }
