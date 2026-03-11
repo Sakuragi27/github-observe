@@ -17,15 +17,32 @@ export default function SyncPage() {
   const handleSync = async () => {
     setSyncing(true)
     setMessage('')
-    setProgress({ current: 0, total: 0 })
+    setProgress({ current: 0, total: 100 })
     
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200))
-      setProgress({ current: i, total: 100 })
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ force: true })
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok) {
+        setProgress({ current: 100, total: 100 })
+        setMessage(`✅ 同步完成！共同步 ${data.newCount || 0} 个项目`)
+      } else {
+        setMessage('❌ ' + (data.error || '同步失败'))
+      }
+    } catch (err) {
+      setMessage('❌ 同步出错，请重试')
+    } finally {
+      setSyncing(false)
     }
-    
-    setMessage('✅ 同步完成！共同步 128 个项目')
-    setSyncing(false)
   }
 
   return (
