@@ -24,7 +24,7 @@ interface Tag {
   count: number
 }
 
-// 模拟数据
+// 模拟数据 - v1.0
 const mockProjects: Project[] = [
   { id: '1', name: 'next.js', fullName: 'vercel/next.js', description: 'The React Framework for Production', htmlUrl: 'https://github.com/vercel/next.js', stargazersCount: 218000, language: 'TypeScript', topics: ['react', 'framework'], tags: [{ id: '1', name: '前端', slug: 'frontend' }], starredAt: '2024-01-15' },
   { id: '2', name: 'react', fullName: 'facebook/react', description: 'A declarative, efficient, and flexible JavaScript library', htmlUrl: 'https://github.com/facebook/react', stargazersCount: 219000, language: 'JavaScript', topics: ['react', 'ui'], tags: [{ id: '1', name: '前端', slug: 'frontend' }], starredAt: '2024-01-14' },
