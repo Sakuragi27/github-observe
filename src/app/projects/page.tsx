@@ -54,7 +54,7 @@ export default function ProjectsPage() {
         
         if (res.ok) {
           const data = await res.json()
-          setProjects(data.projects || [])
+          setProjects(data.data?.projects || data.projects || [])
           setHasToken(true)
         }
       } catch (err) {
