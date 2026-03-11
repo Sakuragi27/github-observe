@@ -18,9 +18,13 @@ export default function SettingsPage() {
     setMessage('')
     
     try {
+      const authToken = localStorage.getItem('token')
       const res = await fetch('/api/user/token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
         body: JSON.stringify({ githubToken: token }),
       })
       
