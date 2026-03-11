@@ -38,9 +38,14 @@ export async function POST(request: NextRequest) {
     console.log('=== SYNC DEBUG ===')
     console.log('User ID:', userId)
     console.log('Has GitHub Token:', !!user.githubToken)
+    console.log('Decrypted token length:', token.length)
+    console.log('Token prefix:', token.substring(0, 15))
     
     const stars = (await getAllUserStars(token)).slice(0, 30)
     console.log('Stars count:', stars.length)
+    if (stars.length > 0) {
+      console.log('First star:', stars[0].full_name)
+    }
 
     let newCount = 0
     let updatedCount = 0
