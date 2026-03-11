@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       where: { id: userId },
     })
 
+    console.log("User found:", !!user, "Token:", !!user?.githubToken)
     if (!user || !user.githubToken) {
       return NextResponse.json(
         { error: '请先配置 GitHub Token' },
