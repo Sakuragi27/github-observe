@@ -24,23 +24,7 @@ interface Tag {
   count: number
 }
 
-// 模拟数据 - v1.0
-const mockProjects: Project[] = [
-  { id: '1', name: 'next.js', fullName: 'vercel/next.js', description: 'The React Framework for Production', htmlUrl: 'https://github.com/vercel/next.js', stargazersCount: 218000, language: 'TypeScript', topics: ['react', 'framework'], tags: [{ id: '1', name: '前端', slug: 'frontend' }], starredAt: '2024-01-15' },
-  { id: '2', name: 'react', fullName: 'facebook/react', description: 'A declarative, efficient, and flexible JavaScript library', htmlUrl: 'https://github.com/facebook/react', stargazersCount: 219000, language: 'JavaScript', topics: ['react', 'ui'], tags: [{ id: '1', name: '前端', slug: 'frontend' }], starredAt: '2024-01-14' },
-  { id: '3', name: 'vue', fullName: 'vuejs/vue', description: 'Progressive JavaScript Framework', htmlUrl: 'https://github.com/vuejs/vue', stargazersCount: 206000, language: 'TypeScript', topics: ['vue', 'framework'], tags: [{ id: '2', name: '前端', slug: 'frontend' }], starredAt: '2024-01-13' },
-  { id: '4', name: 'tailwindcss', fullName: 'tailwindlabs/tailwindcss', description: 'A utility-first CSS framework', htmlUrl: 'https://github.com/tailwindlabs/tailwindcss', stargazersCount: 76000, language: 'CSS', topics: ['css', 'framework'], tags: [{ id: '3', name: '工具', slug: 'tool' }], starredAt: '2024-01-12' },
-  { id: '5', name: 'vscode', fullName: 'microsoft/vscode', description: 'Code editing. Redefined.', htmlUrl: 'https://github.com/microsoft/vscode', stargazersCount: 156000, language: 'TypeScript', topics: ['editor', 'tool'], tags: [{ id: '3', name: '工具', slug: 'tool' }], starredAt: '2024-01-11' },
-  { id: '6', name: 'rust', fullName: 'rust-lang/rust', description: 'Empowering everyone to build reliable and efficient software.', htmlUrl: 'https://github.com/rust-lang/rust', stargazersCount: 96000, language: 'Rust', topics: ['systems', 'language'], tags: [{ id: '4', name: '后端', slug: 'backend' }], starredAt: '2024-01-10' },
-]
-
-const mockTags: Tag[] = [
-  { id: '1', name: '前端', slug: 'frontend', count: 156 },
-  { id: '2', name: '后端', slug: 'backend', count: 89 },
-  { id: '3', name: '工具', slug: 'tool', count: 234 },
-  { id: '4', name: 'AI/ML', slug: 'ai-ml', count: 67 },
-  { id: '5', name: '开源', slug: 'opensource', count: 312 },
-]
+// 项目数据从 API 获取
 
 export default function ProjectsPage() {
   const router = useRouter()
@@ -50,9 +34,38 @@ export default function ProjectsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedLang, setSelectedLang] = useState<string>('')
   const [showFilters, setShowFilters] = useState(false)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [tags, setTags] = useState<Tag[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hasToken, setHasToken] = useState(false)
 
-  const projects = mockProjects
-  const tags = mockTags
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          setLoading(false)
+          return
+        }
+        
+        const res = await fetch('/api/projects', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        
+        if (res.ok) {
+          const data = await res.json()
+          setProjects(data.projects || [])
+          setHasToken(true)
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [])
 
   const filteredProjects = projects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -72,6 +85,32 @@ export default function ProjectsPage() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     router.push('/login')
+  }
+
+  // 加载状态
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-lg">加载中...</div>
+      </div>
+    )
+  }
+
+  // 未配置 Token
+  if (!hasToken && projects.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-white/60 text-lg mb-4">请先在设置页面配置 GitHub Token</div>
+          <button 
+            onClick={() => router.push('/settings')}
+            className="px-6 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition"
+          >
+            前往设置
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
