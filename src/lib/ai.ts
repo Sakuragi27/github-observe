@@ -16,6 +16,10 @@ export async function analyzeProject(
   topics: string[],
   readmeSummary: string
 ): Promise<AnalyzeResult> {
+  if (!process.env.VOLCANO_API_KEY || !process.env.VOLCANO_ENDPOINT_ID) {
+    return getDefaultResult(name, description, language, topics)
+  }
+
   const prompt = `你是一个 GitHub 项目分析专家。请分析以下项目，输出结构化结果。
 
 项目信息：
@@ -47,13 +51,8 @@ export async function analyzeProject(
       VOLCANO_API_URL,
       {
         model: process.env.VOLCANO_ENDPOINT_ID,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
         max_tokens: 1000,
       },
       {
@@ -61,28 +60,75 @@ export async function analyzeProject(
           'Content-Type': 'application/json',
           Authorization: `Bearer ${process.env.VOLCANO_API_KEY}`,
         },
+        timeout: 30000,
       }
     )
 
     const content = response.data.choices[0].message.content
     const jsonMatch = content.match(/\{[\s\S]*\}/)
-    
+
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
+      const parsed = JSON.parse(jsonMatch[0])
+      // Validate structure
+      if (parsed.tags && Array.isArray(parsed.tags) && parsed.solvedProblem) {
+        return parsed
+      }
     }
 
-    return getDefaultResult(name, description)
+    return getDefaultResult(name, description, language, topics)
   } catch (error) {
-    console.error('AI analyze error:', error)
-    return getDefaultResult(name, description)
+    console.error('AI analyze error for', name, ':', (error as Error).message)
+    return getDefaultResult(name, description, language, topics)
   }
 }
 
-function getDefaultResult(name: string, description: string | null): AnalyzeResult {
+function getDefaultResult(
+  name: string,
+  description: string | null,
+  language?: string | null,
+  topics?: string[]
+): AnalyzeResult {
+  const tags: { name: string; category: string }[] = [{ name: '待分类', category: '其他' }]
+
+  if (language) {
+    tags.push({ name: language, category: '技术领域' })
+  }
+  if (topics && topics.length > 0) {
+    topics.slice(0, 3).forEach((t) => {
+      tags.push({ name: t, category: '类型' })
+    })
+  }
+
   return {
-    tags: [{ name: '待分类', category: '其他' }],
+    tags,
     solvedProblem: description || `${name} 项目`,
     useCases: [],
     keyFeatures: [],
   }
+}
+
+/**
+ * Analyze multiple projects with concurrency control
+ */
+export async function analyzeProjectsBatch(
+  projects: Array<{
+    name: string
+    description: string | null
+    language: string | null
+    topics: string[]
+    readme: string
+  }>,
+  concurrency = 3
+): Promise<AnalyzeResult[]> {
+  const results: AnalyzeResult[] = []
+
+  for (let i = 0; i < projects.length; i += concurrency) {
+    const batch = projects.slice(i, i + concurrency)
+    const batchResults = await Promise.all(
+      batch.map((p) => analyzeProject(p.name, p.description, p.language, p.topics, p.readme))
+    )
+    results.push(...batchResults)
+  }
+
+  return results
 }

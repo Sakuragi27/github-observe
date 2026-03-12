@@ -1,277 +1,276 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import {
+  FolderGit2, Tags, Star, RefreshCw, ExternalLink, Clock, TrendingUp, Heart,
+} from 'lucide-react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
+import { AuthLayout } from '@/components/layout/auth-layout'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { api } from '@/lib/api'
 
-// 模拟数据
-const stats = [
-  { label: '总项目数', value: '128', icon: '📂', trend: '+12' },
-  { label: '今日新增', value: '5', icon: '✨', trend: '+3' },
-  { label: '同步时间', value: '2h前', icon: '🔄', trend: '' },
-  { label: '标签总数', value: '24', icon: '🏷️', trend: '+2' },
-]
+interface DashboardData {
+  totalProjects: number
+  taggedCount: number
+  favoriteCount: number
+  analyzedCount: number
+  lastSyncedAt: string | null
+  languageDistribution: { name: string; value: number }[]
+  tagDistribution: { name: string; value: number }[]
+  recentProjects: any[]
+}
 
-const recentProjects = [
-  { name: 'vercel/next.js', desc: 'The React Framework', lang: 'TypeScript', stars: '218k', updated: '2小时前' },
-  { name: 'facebook/react', desc: 'A declarative UI library', lang: 'JavaScript', stars: '219k', updated: '3小时前' },
-  { name: 'vuejs/vue', desc: 'Progressive JavaScript Framework', lang: 'TypeScript', stars: '206k', updated: '5小时前' },
-  { name: 'tailwindlabs/tailwindcss', desc: 'A utility-first CSS framework', lang: 'CSS', stars: '76k', updated: '1天前' },
-]
+const COLORS = ['hsl(221, 83%, 53%)', 'hsl(160, 60%, 45%)', 'hsl(30, 80%, 55%)', 'hsl(280, 65%, 60%)', 'hsl(340, 75%, 55%)', 'hsl(200, 70%, 50%)', 'hsl(100, 50%, 45%)', 'hsl(45, 90%, 50%)']
 
-const recommendedProjects = [
-  { name: 'sindresorhus/awesome', desc: 'Awesome lists', lang: 'Python', stars: '302k' },
-  { name: 'github/docs', desc: 'GitHub documentation', lang: 'TypeScript', stars: '156k' },
-  { name: 'microsoft/vscode', desc: 'Visual Studio Code', lang: 'TypeScript', stars: '156k' },
-]
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+}
 
-export default function HomePage() {
-  const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [mounted, setMounted] = useState(false)
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+}
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setMounted(true)
-    setIsLoggedIn(!!localStorage.getItem("token"))
+    api.get<{ data: DashboardData }>('/api/dashboard')
+      .then((res) => setStats(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
-  // 防止闪烁
-  if (!mounted) {
-    return null
-  }
-  
-
-
-
-  // 未登录显示引导页
-  if (!isLoggedIn) {
-    return (
-      <main className="min-h-screen flex items-center justify-center relative overflow-hidden">
-        {/* 极光渐变背景 */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-          <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" style={{ animationDelay: '4s' }}></div>
-        </div>
-        
-        <div className="relative z-10 max-w-md w-full mx-4">
-          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4">
-                <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-              </div>
-              <h1 className="text-3xl font-bold text-white">GitHub Observe</h1>
-              <p className="mt-2 text-white/60">智能管理你的 GitHub Stars</p>
-            </div>
-            
-            <div className="space-y-4">
-              <Link 
-                href="/login" 
-                className="flex items-center justify-center gap-3 py-3 px-4 bg-white text-gray-900 rounded-xl font-medium hover:bg-gray-100 transition shadow-lg"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-                使用 GitHub 账号登录
-              </Link>
-              
-              <div className="flex items-center gap-4">
-                <div className="flex-1 h-px bg-white/20"></div>
-                <span className="text-white/40 text-sm">或</span>
-                <div className="flex-1 h-px bg-white/20"></div>
-              </div>
-              
-              <Link 
-                href="/projects" 
-                className="block w-full py-3 px-4 bg-white/10 text-white text-center rounded-xl font-medium hover:bg-white/20 transition border border-white/20"
-              >
-                浏览项目
-              </Link>
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <div className="grid grid-cols-3 gap-4 text-center text-sm">
-                <div>
-                  <div className="text-lg mb-1">🔄</div>
-                  <div className="text-white/60">自动同步</div>
-                </div>
-                <div>
-                  <div className="text-lg mb-1">🤖</div>
-                  <div className="text-white/60">AI 摘要</div>
-                </div>
-                <div>
-                  <div className="text-lg mb-1">🏷️</div>
-                  <div className="text-white/60">标签管理</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  // 登录用户显示 Dashboard
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    setIsLoggedIn(false)
-    router.push('/login')
-  }
+  const statCards = stats
+    ? [
+        { label: '总项目数', value: stats.totalProjects, icon: FolderGit2, color: 'text-blue-500' },
+        { label: '已标签', value: stats.taggedCount, icon: Tags, color: 'text-emerald-500' },
+        { label: '收藏项目', value: stats.favoriteCount, icon: Heart, color: 'text-rose-500' },
+        {
+          label: '上次同步',
+          value: stats.lastSyncedAt
+            ? new Date(stats.lastSyncedAt).toLocaleDateString('zh-CN')
+            : '未同步',
+          icon: RefreshCw,
+          color: 'text-amber-500',
+        },
+      ]
+    : []
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* 动态背景 */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 -right-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl"></div>
-      </div>
+    <AuthLayout>
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">管理和分析你收藏的 GitHub 项目</p>
+        </div>
 
-      <div className="relative flex min-h-screen">
-        {/* 侧边栏 */}
-        <aside className="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col">
-          {/* Logo */}
-          <div className="p-6 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-              </div>
-              <span className="text-white font-bold text-lg">Observe</span>
-            </div>
-          </div>
-
-          {/* 导航 */}
-          <nav className="flex-1 p-4 space-y-2">
-            <Link href="/" className="flex items-center gap-3 px-4 py-3 bg-white/10 text-white rounded-xl">
-              <span>🏠</span>
-              <span>首页</span>
-            </Link>
-            <Link href="/projects" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
-              <span>📂</span>
-              <span>项目</span>
-            </Link>
-            <Link href="/sync" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
-              <span>🔄</span>
-              <span>同步</span>
-            </Link>
-            <Link href="/tags" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
-              <span>🏷️</span>
-              <span>标签</span>
-            </Link>
-            <Link href="/settings" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-white/5 hover:text-white rounded-xl transition">
-              <span>⚙️</span>
-              <span>设置</span>
-            </Link>
-          </nav>
-
-          {/* 用户信息 */}
-          <div className="p-4 border-t border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white font-bold">
-                T
-              </div>
-              <div className="flex-1">
-                <div className="text-white text-sm font-medium">Tester</div>
-                <div className="text-white/40 text-xs">tester@test.com</div>
-              </div>
-              <button onClick={handleLogout} className="text-white/40 hover:text-white">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* 主内容区 */}
-        <main className="flex-1 p-8 overflow-auto">
-          {/* 顶部搜索 */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex-1 max-w-xl">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="搜索项目..."
-                  className="w-full px-4 py-3 pl-12 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 backdrop-blur focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40">🔍</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 ml-4">
-              <button className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition">
-                🔔
-              </button>
-            </div>
-          </div>
-
-          {/* 统计卡片 */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition cursor-pointer">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl">{stat.icon}</span>
-                  {stat.trend && (
-                    <span className="text-green-400 text-sm font-medium">{stat.trend}</span>
-                  )}
-                </div>
-                <div className="text-white text-2xl font-bold mb-1">{stat.value}</div>
-                <div className="text-white/40 text-sm">{stat.label}</div>
-              </div>
+        {/* Stat cards */}
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <Skeleton className="h-4 w-20 mb-3" />
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
             ))}
           </div>
+        ) : (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {statCards.map((card) => (
+              <motion.div key={card.label} variants={fadeUp}>
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm text-muted-foreground">{card.label}</span>
+                      <card.icon className={`h-5 w-5 ${card.color}`} />
+                    </div>
+                    <div className="text-2xl font-bold">{card.value}</div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
-          {/* 最近更新 */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-white text-xl font-bold">最近更新</h2>
-              <Link href="/projects" className="text-purple-400 hover:text-purple-300 text-sm">查看全部 →</Link>
-            </div>
-            <div className="space-y-4">
-              {recentProjects.map((project, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition cursor-pointer">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center text-2xl">
-                    📂
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-white font-medium">{project.name}</div>
-                    <div className="text-white/40 text-sm">{project.desc}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white/60 text-sm">{project.lang}</div>
-                    <div className="text-white/40 text-xs">{project.updated}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Charts */}
+        {stats && (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          >
+            {/* Language pie chart */}
+            <motion.div variants={fadeUp}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    语言分布
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stats.languageDistribution.length > 0 ? (
+                    <>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <Pie
+                            data={stats.languageDistribution}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={90}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {stats.languageDistribution.map((_, i) => (
+                              <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                              color: 'hsl(var(--foreground))',
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="flex flex-wrap gap-3 mt-4">
+                        {stats.languageDistribution.slice(0, 6).map((lang, i) => (
+                          <div key={lang.name} className="flex items-center gap-1.5 text-xs">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                            <span className="text-muted-foreground">{lang.name}</span>
+                            <span className="font-medium">{lang.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-[250px] flex items-center justify-center text-muted-foreground">暂无数据</div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
 
-          {/* 智能推荐 */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl">🤖</span>
-              <h2 className="text-white text-xl font-bold">智能推荐</h2>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {recommendedProjects.map((project, index) => (
-                <div key={index} className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition cursor-pointer">
-                  <div className="text-white font-medium mb-2">{project.name}</div>
-                  <div className="text-white/40 text-sm mb-3">{project.desc}</div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/60 text-sm">{project.lang}</span>
-                    <span className="text-purple-400 text-sm">⭐ {project.stars}</span>
-                  </div>
+            {/* Tag bar chart */}
+            <motion.div variants={fadeUp}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Tags className="h-5 w-5 text-primary" />
+                    热门标签
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stats.tagDistribution.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={stats.tagDistribution.slice(0, 8)} layout="vertical">
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                        <RechartsTooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            color: 'hsl(var(--foreground))',
+                          }}
+                        />
+                        <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[280px] flex items-center justify-center text-muted-foreground">暂无标签数据</div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Recent projects */}
+        {stats && stats.recentProjects.length > 0 && (
+          <motion.div variants={fadeUp} initial="hidden" animate="show">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  最近收藏
+                </CardTitle>
+                <Link href="/projects" className="text-sm text-primary hover:underline">
+                  查看全部
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stats.recentProjects.map((project: any) => (
+                    <Link key={project.id} href={`/project/${project.id}`}>
+                      <motion.div
+                        whileHover={{ y: -2 }}
+                        className="p-4 rounded-lg border bg-card hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-medium text-sm truncate flex-1">{project.fullName}</h3>
+                          <a
+                            href={project.htmlUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-muted-foreground hover:text-foreground ml-2"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                          {project.description || '暂无描述'}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {project.language && (
+                            <Badge variant="secondary" className="text-xs">{project.language}</Badge>
+                          )}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Star className="h-3 w-3" />
+                            {project.stargazersCount?.toLocaleString()}
+                          </div>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </main>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Empty state */}
+        {!loading && stats && stats.totalProjects === 0 && (
+          <Card className="p-12 text-center">
+            <FolderGit2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">还没有项目</h3>
+            <p className="text-muted-foreground mb-6">先配置 GitHub Token，然后同步你的 Star 项目</p>
+            <Link href="/settings">
+              <Button>前往设置</Button>
+            </Link>
+          </Card>
+        )}
       </div>
-    </div>
+    </AuthLayout>
   )
 }

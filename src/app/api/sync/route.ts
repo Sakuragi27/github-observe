@@ -3,30 +3,23 @@ import { prisma } from '@/lib/prisma'
 import { getAllUserStars, getRepoReadme } from '@/lib/github'
 import { analyzeProject } from '@/lib/ai'
 import { decrypt } from '@/lib/encrypt'
-import { getUserFromRequest } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+
+const CONCURRENCY = 3
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    
-    // 优先从 token 获取 userId
-    const authUser = getUserFromRequest(request)
-    const userId = authUser?.userId || body.userId
+    const auth = requireAuth(request)
+    if ('error' in auth) return auth.error
+
+    const body = await request.json().catch(() => ({}))
     const force = body.force || false
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未授权或缺少用户ID' },
-        { status: 401 }
-      )
-    }
-
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: auth.user.userId },
     })
 
-    console.log("User found:", !!user, "Token:", !!user?.githubToken)
-    if (!user || !user.githubToken) {
+    if (!user?.githubToken) {
       return NextResponse.json(
         { error: '请先配置 GitHub Token' },
         { status: 400 }
@@ -34,119 +27,116 @@ export async function POST(request: NextRequest) {
     }
 
     const token = decrypt(user.githubToken)
-    // v1.1: 全量同步，无数量限制
-    console.log('=== SYNC DEBUG ===')
-    console.log('User ID:', userId)
-    console.log('Has GitHub Token:', !!user.githubToken)
-    console.log('Decrypted token length:', token.length)
-    console.log('Token prefix:', token.substring(0, 15))
-    
-    const stars = (await getAllUserStars(token))
-    console.log('Stars count:', stars.length)
-    if (stars.length > 0) {
-      console.log('First star:', stars[0].full_name)
-    }
+    const stars = await getAllUserStars(token)
 
     let newCount = 0
     let updatedCount = 0
 
-    for (const star of stars) {
-      const existing = await prisma.project.findFirst({
-        where: {
-          userId,
-          githubId: star.id,
-        },
-      })
+    // Process in batches with concurrency control
+    for (let i = 0; i < stars.length; i += CONCURRENCY) {
+      const batch = stars.slice(i, i + CONCURRENCY)
 
-      if (existing && !force) {
-        continue
-      }
+      await Promise.all(
+        batch.map(async (star) => {
+          try {
+            const existing = await prisma.project.findFirst({
+              where: { userId: auth.user.userId, githubId: star.id },
+            })
 
-      // 获取 README
-      const [owner, repo] = star.full_name.split('/')
-      const readme = await getRepoReadme(token, owner, repo)
+            if (existing && !force) return
 
-      // AI 分析
-      const analysis = await analyzeProject(
-        star.name,
-        star.description,
-        star.language,
-        star.topics,
-        readme
+            const [owner, repo] = star.full_name.split('/')
+            const readme = await getRepoReadme(token, owner, repo)
+
+            const analysis = await analyzeProject(
+              star.name,
+              star.description,
+              star.language,
+              star.topics,
+              readme
+            )
+
+            if (existing) {
+              await prisma.project.update({
+                where: { id: existing.id },
+                data: {
+                  description: star.description,
+                  stargazersCount: star.stargazers_count,
+                  language: star.language,
+                  topics: JSON.stringify(star.topics),
+                  analysis: JSON.stringify(analysis),
+                  solvedProblem: analysis.solvedProblem,
+                  syncedAt: new Date(),
+                },
+              })
+              updatedCount++
+            } else {
+              const project = await prisma.project.create({
+                data: {
+                  userId: auth.user.userId,
+                  githubId: star.id,
+                  name: star.name,
+                  fullName: star.full_name,
+                  description: star.description,
+                  htmlUrl: star.html_url,
+                  stargazersCount: star.stargazers_count,
+                  language: star.language,
+                  topics: JSON.stringify(star.topics),
+                  analysis: JSON.stringify(analysis),
+                  solvedProblem: analysis.solvedProblem,
+                  starredAt: star.starred_at ? new Date(star.starred_at) : null,
+                  syncedAt: new Date(),
+                },
+              })
+
+              // Create tag associations
+              for (const tag of analysis.tags) {
+                try {
+                  const tagRecord = await prisma.tag.upsert({
+                    where: { slug: tag.name.toLowerCase().replace(/\s+/g, '-') },
+                    create: {
+                      name: tag.name,
+                      slug: tag.name.toLowerCase().replace(/\s+/g, '-'),
+                      category: tag.category,
+                    },
+                    update: {
+                      count: { increment: 1 },
+                    },
+                  })
+
+                  await prisma.projectTag.upsert({
+                    where: {
+                      projectId_tagId: { projectId: project.id, tagId: tagRecord.id },
+                    },
+                    create: { projectId: project.id, tagId: tagRecord.id },
+                    update: {},
+                  })
+                } catch (tagError) {
+                  console.error('Tag creation error:', (tagError as Error).message)
+                }
+              }
+
+              newCount++
+            }
+          } catch (starError) {
+            console.error(`Error processing ${star.full_name}:`, (starError as Error).message)
+          }
+        })
       )
-
-      if (existing) {
-        await prisma.project.update({
-          where: { id: existing.id },
-          data: {
-            description: star.description,
-            stargazersCount: star.stargazers_count,
-            language: star.language,
-            topics: JSON.stringify(star.topics),
-            analysis: JSON.stringify(analysis),
-            solvedProblem: analysis.solvedProblem,
-            syncedAt: new Date(),
-          },
-        })
-        updatedCount++
-      } else {
-        const project = await prisma.project.create({
-          data: {
-            userId,
-            githubId: star.id,
-            name: star.name,
-            fullName: star.full_name,
-            description: star.description,
-            htmlUrl: star.html_url,
-            stargazersCount: star.stargazers_count,
-            language: star.language,
-            topics: JSON.stringify(star.topics),
-            analysis: JSON.stringify(analysis),
-            solvedProblem: analysis.solvedProblem,
-            starredAt: star.starred_at ? new Date(star.starred_at) : null,
-            syncedAt: new Date(),
-          },
-        })
-
-        // 创建标签关联
-        for (const tag of analysis.tags) {
-          const tagRecord = await prisma.tag.upsert({
-            where: { slug: tag.name.toLowerCase() },
-            create: {
-              name: tag.name,
-              slug: tag.name.toLowerCase(),
-              category: tag.category,
-            },
-            update: {
-              count: { increment: 1 },
-            },
-          })
-
-          await prisma.projectTag.create({
-            data: {
-              projectId: project.id,
-              tagId: tagRecord.id,
-            },
-          })
-        }
-
-        newCount++
-      }
     }
+
+    // Update last synced timestamp
+    await prisma.user.update({
+      where: { id: auth.user.userId },
+      data: { lastSyncedAt: new Date() },
+    })
 
     return NextResponse.json({
       success: true,
-      data: {
-        total: stars.length,
-        newCount,
-        updatedCount,
-      },
+      data: { total: stars.length, newCount, updatedCount },
     })
   } catch (error) {
     console.error('Sync error:', error)
-    return NextResponse.json(
-      { error: '同步失败' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '同步失败' }, { status: 500 })
   }
 }
