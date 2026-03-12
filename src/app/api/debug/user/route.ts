@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserFromRequest } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const authUser = getUserFromRequest(request)
-    
-    if (!authUser?.userId) {
-      return NextResponse.json(
-        { error: '未登录' },
-        { status: 401 }
-      )
-    }
+    const auth = await requireAuth()
+    if ('error' in auth) return auth.error
 
     const user = await prisma.user.findUnique({
-      where: { id: authUser.userId },
+      where: { id: auth.user.userId },
       select: {
         id: true,
         email: true,

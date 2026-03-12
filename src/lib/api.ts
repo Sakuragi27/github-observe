@@ -6,25 +6,8 @@ interface ApiError {
 }
 
 class ApiClient {
-  private getToken(): string | null {
-    if (typeof window === "undefined") return null
-    try {
-      const auth = localStorage.getItem("auth")
-      if (auth) {
-        return JSON.parse(auth).token
-      }
-      // Fallback to old key
-      return localStorage.getItem("token")
-    } catch {
-      return null
-    }
-  }
-
   private getHeaders(): HeadersInit {
-    const headers: HeadersInit = { "Content-Type": "application/json" }
-    const token = this.getToken()
-    if (token) headers["Authorization"] = `Bearer ${token}`
-    return headers
+    return { "Content-Type": "application/json" }
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
@@ -152,13 +135,4 @@ export interface DashboardStats {
   languageDistribution: { name: string; value: number }[]
   tagDistribution: { name: string; value: number }[]
   recentProjects: Project[]
-}
-
-// Backward compatibility
-export function getAuthHeaders(): HeadersInit {
-  return {}
-}
-
-export async function apiRequest(url: string, options: RequestInit = {}) {
-  return fetch(url, options)
 }

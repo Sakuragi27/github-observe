@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserFromRequest } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { nanoid } from 'nanoid'
 
 // 生成分享链接
 export async function POST(request: NextRequest) {
   try {
-    const authUser = getUserFromRequest(request)
-    
-    if (!authUser?.userId) {
-      return NextResponse.json(
-        { error: '未授权' },
-        { status: 401 }
-      )
-    }
+    const auth = await requireAuth()
+    if ('error' in auth) return auth.error
 
     const body = await request.json()
     const { projectId, expiresInDays = 7 } = body
@@ -29,7 +23,7 @@ export async function POST(request: NextRequest) {
     const project = await prisma.project.findFirst({
       where: {
         id: projectId,
-        userId: authUser.userId,
+        userId: auth.user.userId,
       },
     })
 

@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = requireAuth(request)
+    const auth = await requireAuth()
     if ('error' in auth) return auth.error
 
     const body = await request.json()

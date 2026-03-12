@@ -1,69 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import { motion } from 'framer-motion'
-import { Github, Mail, Key, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Github, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { useAuth } from '@/providers/auth-provider'
-import { useToast } from '@/components/ui/toast'
 
 export default function LoginPage() {
-  const [isRegister, setIsRegister] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [githubToken, setGithubToken] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const router = useRouter()
-  const { login } = useAuth()
-  const { toast } = useToast()
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null)
 
-  const handleAccountSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login'
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-
-      if (!res.ok) {
-        toast(data.error || '操作失败', 'error')
-        return
-      }
-
-      if (isRegister) {
-        toast('注册成功，请登录', 'success')
-        setIsRegister(false)
-        return
-      }
-
-      login(data.token, data.user.id, data.user.email)
-      toast('登录成功', 'success')
-      router.push('/')
-    } catch {
-      toast('网络错误，请重试', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleTokenSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      toast('请先使用邮箱注册账号，然后在设置中配置 GitHub Token', 'info')
-    } finally {
-      setLoading(false)
-    }
+  const handleOAuthSignIn = async (provider: string) => {
+    setLoadingProvider(provider)
+    await signIn(provider, { callbackUrl: '/' })
   }
 
   return (
@@ -116,104 +64,57 @@ export default function LoginPage() {
             <p className="mt-2 text-muted-foreground">智能管理你的 GitHub Stars</p>
           </div>
 
-          {/* Login mode tabs */}
-          <Tabs defaultValue="account" className="mb-6">
-            <TabsList className="w-full">
-              <TabsTrigger value="account" className="flex-1">
-                <Mail className="w-4 h-4 mr-2" />
-                账号{isRegister ? '注册' : '登录'}
-              </TabsTrigger>
-              <TabsTrigger value="token" className="flex-1">
-                <Key className="w-4 h-4 mr-2" />
-                Token 登录
-              </TabsTrigger>
-            </TabsList>
+          {/* OAuth buttons */}
+          <div className="space-y-3">
+            <Button
+              onClick={() => handleOAuthSignIn('github')}
+              disabled={!!loadingProvider}
+              className="w-full h-12 text-base"
+              variant="default"
+            >
+              {loadingProvider === 'github' ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Github className="w-5 h-5" />
+              )}
+              {loadingProvider === 'github' ? '跳转中...' : '使用 GitHub 登录'}
+            </Button>
 
-            <TabsContent value="account">
-              <form onSubmit={handleAccountSubmit} className="space-y-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">邮箱</label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    required
+            <Button
+              onClick={() => handleOAuthSignIn('google')}
+              disabled={!!loadingProvider}
+              className="w-full h-12 text-base"
+              variant="outline"
+            >
+              {loadingProvider === 'google' ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                    fill="#4285F4"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">密码</label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder={isRegister ? '至少8位密码' : '输入密码'}
-                      required
-                      minLength={isRegister ? 8 : 6}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11"
-                >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {loading ? '处理中...' : isRegister ? '注册' : '登录'}
-                </Button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  {isRegister ? '已有账号？' : '还没有账号？'}
-                  <button
-                    type="button"
-                    onClick={() => setIsRegister(!isRegister)}
-                    className="text-primary hover:text-primary/80 ml-1"
-                  >
-                    {isRegister ? '去登录' : '注册'}
-                  </button>
-                </p>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="token">
-              <form onSubmit={handleTokenSubmit} className="space-y-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    GitHub Personal Access Token
-                  </label>
-                  <Input
-                    type="password"
-                    value={githubToken}
-                    onChange={(e) => setGithubToken(e.target.value)}
-                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                    required
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
                   />
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    在 GitHub Settings &rarr; Developer settings &rarr; Personal access tokens 创建
-                  </p>
-                </div>
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </svg>
+              )}
+              {loadingProvider === 'google' ? '跳转中...' : '使用 Google 登录'}
+            </Button>
+          </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11"
-                >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {loading ? '验证中...' : '使用 Token 登录'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            登录即表示同意我们的服务条款和隐私政策
+          </p>
         </div>
       </motion.div>
     </main>

@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = requireAuth(request)
+    const auth = await requireAuth()
     if ('error' in auth) return auth.error
 
     const project = await prisma.project.findFirst({
@@ -42,7 +42,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = requireAuth(request)
+    const auth = await requireAuth()
     if ('error' in auth) return auth.error
 
     const body = await request.json()
@@ -86,7 +86,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = requireAuth(request)
+    const auth = await requireAuth()
     if ('error' in auth) return auth.error
 
     const project = await prisma.project.findFirst({

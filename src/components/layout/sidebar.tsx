@@ -152,12 +152,21 @@ export function Sidebar() {
           {/* User info */}
           {user && (
             <div className={cn("flex items-center gap-3 px-3 py-2", collapsed && "justify-center")}>
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-medium shrink-0">
-                {user.email[0].toUpperCase()}
-              </div>
+              {user.image ? (
+                <img
+                  src={user.image}
+                  alt={user.name || user.email}
+                  className="w-8 h-8 rounded-full shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-medium shrink-0">
+                  {(user.name || user.email)[0].toUpperCase()}
+                </div>
+              )}
               {!collapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{user.email}</p>
+                  {user.name && <p className="text-sm font-medium truncate">{user.name}</p>}
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
               )}
               {!collapsed && (

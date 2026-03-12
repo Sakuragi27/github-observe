@@ -1,39 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/next-auth'
 
 export interface AuthUser {
   userId: string
   email: string
 }
 
-function getJwtSecret(): string {
-  const secret = process.env.NEXTAUTH_SECRET
-  if (!secret) {
-    throw new Error('NEXTAUTH_SECRET environment variable is required')
-  }
-  return secret
-}
-
-export function getUserFromRequest(request: NextRequest): AuthUser | null {
+/**
+ * Get user from NextAuth session.
+ */
+export async function getSessionUser(): Promise<AuthUser | null> {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return null
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return null
+    return {
+      userId: (session.user as any).id,
+      email: session.user.email,
     }
-
-    const token = authHeader.substring(7)
-    const payload = verify(token, getJwtSecret()) as AuthUser
-    return payload
   } catch {
     return null
   }
 }
 
 /**
- * Helper to require authentication. Returns AuthUser or error response.
+ * Require authentication. Returns AuthUser or error response.
  */
-export function requireAuth(request: NextRequest): { user: AuthUser } | { error: NextResponse } {
-  const user = getUserFromRequest(request)
+export async function requireAuth(): Promise<{ user: AuthUser } | { error: NextResponse }> {
+  const user = await getSessionUser()
   if (!user) {
     return {
       error: NextResponse.json({ error: '未授权，请重新登录' }, { status: 401 }),
@@ -41,5 +35,3 @@ export function requireAuth(request: NextRequest): { user: AuthUser } | { error:
   }
   return { user }
 }
-
-export { getJwtSecret }
