@@ -60,8 +60,6 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // For token login, first register/login with a generated account,
-      // then save the token. For now, show guidance.
       toast('请先使用邮箱注册账号，然后在设置中配置 GitHub Token', 'info')
     } finally {
       setLoading(false)
@@ -69,31 +67,29 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Aurora gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900">
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.7, 0.5] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-purple-500/30 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.7, 0.5] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-[10%] right-[-5%] w-[35%] h-[35%] bg-blue-500/30 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.6, 0.4] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute bottom-[-10%] left-[20%] w-[30%] h-[30%] bg-indigo-500/30 rounded-full blur-3xl"
-        />
-      </div>
+    <main className="min-h-screen flex items-center justify-center relative overflow-hidden aurora-bg">
+      {/* Animated blobs */}
+      <motion.div
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-3xl"
+      />
+      <motion.div
+        animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-[10%] right-[-5%] w-[35%] h-[35%] bg-primary/15 rounded-full blur-3xl"
+      />
+      <motion.div
+        animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute bottom-[-10%] left-[20%] w-[30%] h-[30%] bg-primary/20 rounded-full blur-3xl"
+      />
 
       {/* Dot pattern */}
       <div
-        className="absolute inset-0 opacity-20"
+        className="absolute inset-0 opacity-10"
         style={{
-          backgroundImage: 'radial-gradient(circle at 25px 25px, rgba(255,255,255,0.15) 1px, transparent 0)',
+          backgroundImage: 'radial-gradient(circle at 25px 25px, hsl(var(--foreground) / 0.15) 1px, transparent 0)',
           backgroundSize: '50px 50px',
         }}
       />
@@ -105,35 +101,29 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="relative z-10 max-w-md w-full mx-4"
       >
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8">
+        <div className="glass-card rounded-2xl shadow-2xl p-8">
           {/* Logo */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', bounce: 0.5 }}
-              className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4"
+              className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4"
             >
-              <Github className="w-9 h-9 text-white" />
+              <Github className="w-9 h-9 text-primary" />
             </motion.div>
-            <h1 className="text-3xl font-bold text-white">GitHub Observe</h1>
-            <p className="mt-2 text-white/60">智能管理你的 GitHub Stars</p>
+            <h1 className="text-3xl font-bold text-foreground">GitHub Observe</h1>
+            <p className="mt-2 text-muted-foreground">智能管理你的 GitHub Stars</p>
           </div>
 
           {/* Login mode tabs */}
           <Tabs defaultValue="account" className="mb-6">
-            <TabsList className="w-full bg-white/10 border border-white/10">
-              <TabsTrigger
-                value="account"
-                className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/60"
-              >
+            <TabsList className="w-full">
+              <TabsTrigger value="account" className="flex-1">
                 <Mail className="w-4 h-4 mr-2" />
                 账号{isRegister ? '注册' : '登录'}
               </TabsTrigger>
-              <TabsTrigger
-                value="token"
-                className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/60"
-              >
+              <TabsTrigger value="token" className="flex-1">
                 <Key className="w-4 h-4 mr-2" />
                 Token 登录
               </TabsTrigger>
@@ -142,18 +132,17 @@ export default function LoginPage() {
             <TabsContent value="account">
               <form onSubmit={handleAccountSubmit} className="space-y-4 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-1.5">邮箱</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">邮箱</label>
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
                     required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-purple-400"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-1.5">密码</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">密码</label>
                   <div className="relative">
                     <Input
                       type={showPassword ? 'text' : 'password'}
@@ -162,12 +151,12 @@ export default function LoginPage() {
                       placeholder={isRegister ? '至少8位密码' : '输入密码'}
                       required
                       minLength={isRegister ? 8 : 6}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-purple-400 pr-10"
+                      className="pr-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -177,18 +166,18 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0 h-11"
+                  className="w-full h-11"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {loading ? '处理中...' : isRegister ? '注册' : '登录'}
                 </Button>
 
-                <p className="text-center text-sm text-white/50">
+                <p className="text-center text-sm text-muted-foreground">
                   {isRegister ? '已有账号？' : '还没有账号？'}
                   <button
                     type="button"
                     onClick={() => setIsRegister(!isRegister)}
-                    className="text-purple-400 hover:text-purple-300 ml-1"
+                    className="text-primary hover:text-primary/80 ml-1"
                   >
                     {isRegister ? '去登录' : '注册'}
                   </button>
@@ -199,7 +188,7 @@ export default function LoginPage() {
             <TabsContent value="token">
               <form onSubmit={handleTokenSubmit} className="space-y-4 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-1.5">
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
                     GitHub Personal Access Token
                   </label>
                   <Input
@@ -208,9 +197,8 @@ export default function LoginPage() {
                     onChange={(e) => setGithubToken(e.target.value)}
                     placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                     required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-purple-400"
                   />
-                  <p className="mt-1.5 text-xs text-white/40">
+                  <p className="mt-1.5 text-xs text-muted-foreground">
                     在 GitHub Settings &rarr; Developer settings &rarr; Personal access tokens 创建
                   </p>
                 </div>
@@ -218,7 +206,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0 h-11"
+                  className="w-full h-11"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {loading ? '验证中...' : '使用 Token 登录'}
