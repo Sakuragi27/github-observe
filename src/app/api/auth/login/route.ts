@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       )
     }
     console.error('Login error:', error)
-    return NextResponse.json({ error: '登录失败' }, { status: 500 })
+    const message = error instanceof Error ? error.message : '登录失败'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
