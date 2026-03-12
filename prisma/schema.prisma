@@ -28,6 +28,8 @@ model Project {
   description     String?
   htmlUrl         String
   stargazersCount Int          @default(0)
+  isFavorite   Boolean      @default(false)
+  userNotes    String?
   language        String?
   topics          String?
   analysis        String?
@@ -37,6 +39,7 @@ model Project {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   tags            ProjectTag[]
+  shares       Share[]
 
   @@index([userId])
 }
@@ -62,4 +65,13 @@ model ProjectTag {
   createdAt DateTime @default(now())
 
   @@unique([projectId, tagId])
+}
+
+model Share {
+  id          String   @id @default(cuid())
+  projectId   String
+  shareCode   String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  project     Project  @relation(fields: [projectId], references: [id])
 }
