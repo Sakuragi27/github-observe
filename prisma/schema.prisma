@@ -12,6 +12,7 @@ model User {
   email         String    @unique
   passwordHash  String
   githubToken   String?
+  lastSyncedAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   projects      Project[]

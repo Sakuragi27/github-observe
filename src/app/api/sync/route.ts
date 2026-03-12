@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
     }
 
     const token = decrypt(user.githubToken)
-    // 先只获取前30个Stars用于测试
+    // v1.1: 全量同步，无数量限制
     console.log('=== SYNC DEBUG ===')
     console.log('User ID:', userId)
     console.log('Has GitHub Token:', !!user.githubToken)
     console.log('Decrypted token length:', token.length)
     console.log('Token prefix:', token.substring(0, 15))
     
-    const stars = (await getAllUserStars(token)).slice(0, 30)
+    const stars = (await getAllUserStars(token))
     console.log('Stars count:', stars.length)
     if (stars.length > 0) {
       console.log('First star:', stars[0].full_name)
