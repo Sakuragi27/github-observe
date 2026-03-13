@@ -51,14 +51,16 @@ export async function analyzeProject(
   "detailedSummaryEn": "2-3 paragraphs detailed introduction including project background, core features, technical highlights (English)"
 }
 
-注意：
+严格要求：
 1. 标签数量控制在 3-5 个，只保留最核心的标签
 2. 标签名必须使用通用、标准化的名称（如用"React"而不是"react.js"或"ReactJS"）
 3. 标签分类只使用这几种：技术领域、编程语言、项目类型、应用场景
 4. "解决的问题"要具体，让人一目了然
 5. 不要生成过于宽泛的标签（如"开源"、"工具"、"库"）
 6. detailedSummary 需要 200-300 字，分 2-3 段，涵盖项目背景、核心功能和技术亮点
-7. 英文字段是对应中文字段的英文翻译，内容保持一致
+7. 【极其重要】solvedProblem、useCases、keyFeatures、detailedSummary 这四个字段必须用**中文**填写，绝对不能用英文
+8. 【极其重要】solvedProblemEn、useCasesEn、keyFeaturesEn、detailedSummaryEn 这四个字段必须用**英文**填写
+9. 即使项目的 README 和描述是英文的，中文字段也必须翻译为中文
 
 只输出 JSON，不要其他内容。`
 
