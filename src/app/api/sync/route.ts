@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
                       topics: JSON.stringify(star.topics),
                       analysis: JSON.stringify(analysis),
                       solvedProblem: analysis.solvedProblem,
+                      readme: readme || null,
                       syncedAt: new Date(),
                     },
                   })
@@ -142,6 +143,7 @@ export async function POST(request: NextRequest) {
                       topics: JSON.stringify(star.topics),
                       analysis: JSON.stringify(analysis),
                       solvedProblem: analysis.solvedProblem,
+                      readme: readme || null,
                       starredAt: star.starred_at ? new Date(star.starred_at) : null,
                       syncedAt: new Date(),
                     },
