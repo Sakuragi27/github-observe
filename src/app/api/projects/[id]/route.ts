@@ -26,6 +26,7 @@ export async function GET(
       success: true,
       data: {
         ...project,
+        readme: project.readme,
         tags: project.tags.map((pt) => pt.tag),
         topics: project.topics ? JSON.parse(project.topics) : [],
         analysis: project.analysis ? JSON.parse(project.analysis) : null,

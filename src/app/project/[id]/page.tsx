@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Star, GitFork, ExternalLink, Heart,
-  Sparkles, BookOpen, Tag, Share2, Loader2, Copy, X,
+  Sparkles, BookOpen, Tag, Share2, Loader2, Copy, X, FileText,
 } from 'lucide-react'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,11 +27,17 @@ interface ProjectDetail {
   stargazersCount: number
   language: string | null
   topics: string[]
+  readme: string | null
   analysis: {
     tags: { name: string; category: string }[]
     solvedProblem: string
     useCases: string[]
     keyFeatures: string[]
+    detailedSummary: string
+    solvedProblemEn: string
+    useCasesEn: string[]
+    keyFeaturesEn: string[]
+    detailedSummaryEn: string
   } | null
   solvedProblem: string | null
   isFavorite: boolean
@@ -47,6 +53,7 @@ export default function ProjectDetailPage() {
   const [notes, setNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
   const [newTagName, setNewTagName] = useState('')
+  const [lang, setLang] = useState<'zh' | 'en'>('zh')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -223,22 +230,52 @@ export default function ProjectDetailPage() {
             {analysis && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    AI 智能摘要
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      AI 智能摘要
+                    </CardTitle>
+                    <div className="flex items-center gap-1 rounded-lg border p-0.5">
+                      <button
+                        onClick={() => setLang('zh')}
+                        className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                          lang === 'zh'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        中
+                      </button>
+                      <button
+                        onClick={() => setLang('en')}
+                        className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                          lang === 'en'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        EN
+                      </button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-medium mb-1">解决的问题</h4>
-                    <p className="text-sm text-muted-foreground">{analysis.solvedProblem}</p>
+                    <h4 className="text-sm font-medium mb-1">
+                      {lang === 'zh' ? '解决的问题' : 'Problem Solved'}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      {lang === 'zh' ? analysis.solvedProblem : (analysis.solvedProblemEn || analysis.solvedProblem)}
+                    </p>
                   </div>
 
-                  {analysis.keyFeatures.length > 0 && (
+                  {((lang === 'zh' ? analysis.keyFeatures : (analysis.keyFeaturesEn || analysis.keyFeatures)) || []).length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium mb-2">核心特性</h4>
+                      <h4 className="text-sm font-medium mb-2">
+                        {lang === 'zh' ? '核心特性' : 'Key Features'}
+                      </h4>
                       <ul className="space-y-1">
-                        {analysis.keyFeatures.map((feature, i) => (
+                        {(lang === 'zh' ? analysis.keyFeatures : (analysis.keyFeaturesEn || analysis.keyFeatures)).map((feature, i) => (
                           <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
                             <span className="text-primary mt-0.5">-</span>
                             {feature}
@@ -248,19 +285,51 @@ export default function ProjectDetailPage() {
                     </div>
                   )}
 
-                  {analysis.useCases.length > 0 && (
+                  {((lang === 'zh' ? analysis.useCases : (analysis.useCasesEn || analysis.useCases)) || []).length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium mb-2">适用场景</h4>
+                      <h4 className="text-sm font-medium mb-2">
+                        {lang === 'zh' ? '适用场景' : 'Use Cases'}
+                      </h4>
                       <div className="flex flex-wrap gap-2">
-                        {analysis.useCases.map((uc, i) => (
+                        {(lang === 'zh' ? analysis.useCases : (analysis.useCasesEn || analysis.useCases)).map((uc, i) => (
                           <Badge key={i} variant="secondary">{uc}</Badge>
                         ))}
                       </div>
                     </div>
                   )}
+
+                  {(lang === 'zh' ? analysis.detailedSummary : (analysis.detailedSummaryEn || analysis.detailedSummary)) && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">
+                        {lang === 'zh' ? '详细介绍' : 'Detailed Introduction'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                        {lang === 'zh' ? analysis.detailedSummary : (analysis.detailedSummaryEn || analysis.detailedSummary)}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
+
+            {/* README */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  README
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {project.readme ? (
+                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap break-words max-h-[600px] overflow-y-auto">
+                    {project.readme}
+                  </pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground">暂无 README</p>
+                )}
+              </CardContent>
+            </Card>
 
             {/* User notes */}
             <Card>
