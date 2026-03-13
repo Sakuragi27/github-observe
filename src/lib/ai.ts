@@ -4,9 +4,16 @@ const VOLCANO_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completio
 
 export interface AnalyzeResult {
   tags: { name: string; category: string }[]
+  // 中文
   solvedProblem: string
   useCases: string[]
   keyFeatures: string[]
+  detailedSummary: string
+  // 英文
+  solvedProblemEn: string
+  useCasesEn: string[]
+  keyFeaturesEn: string[]
+  detailedSummaryEn: string
 }
 
 export async function analyzeProject(
@@ -20,7 +27,7 @@ export async function analyzeProject(
     return getDefaultResult(name, description, language, topics)
   }
 
-  const prompt = `你是一个 GitHub 项目分析专家。请分析以下项目，输出结构化结果。
+  const prompt = `你是一个 GitHub 项目分析专家。请分析以下项目，输出中英文双语的结构化结果。
 
 项目信息：
 - 名称：${name}
@@ -34,9 +41,14 @@ export async function analyzeProject(
   "tags": [
     {"name": "标签名", "category": "分类（技术领域/类型/场景）"}
   ],
-  "solvedProblem": "一句话描述这个项目主要解决什么问题",
+  "solvedProblem": "一句话描述这个项目主要解决什么问题（中文）",
   "useCases": ["适用场景1", "适用场景2"],
-  "keyFeatures": ["核心特性1", "核心特性2"]
+  "keyFeatures": ["核心特性1", "核心特性2"],
+  "detailedSummary": "2-3段详细介绍，包括项目背景、核心功能、技术亮点（200-300字中文）",
+  "solvedProblemEn": "One sentence describing the main problem this project solves (English)",
+  "useCasesEn": ["Use case 1", "Use case 2"],
+  "keyFeaturesEn": ["Key feature 1", "Key feature 2"],
+  "detailedSummaryEn": "2-3 paragraphs detailed introduction including project background, core features, technical highlights (English)"
 }
 
 注意：
@@ -45,6 +57,8 @@ export async function analyzeProject(
 3. 标签分类只使用这几种：技术领域、编程语言、项目类型、应用场景
 4. "解决的问题"要具体，让人一目了然
 5. 不要生成过于宽泛的标签（如"开源"、"工具"、"库"）
+6. detailedSummary 需要 200-300 字，分 2-3 段，涵盖项目背景、核心功能和技术亮点
+7. 英文字段是对应中文字段的英文翻译，内容保持一致
 
 只输出 JSON，不要其他内容。`
 
@@ -55,7 +69,7 @@ export async function analyzeProject(
         model: process.env.VOLCANO_ENDPOINT_ID,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
-        max_tokens: 1000,
+        max_tokens: 2000,
       },
       {
         headers: {
@@ -106,6 +120,11 @@ function getDefaultResult(
     solvedProblem: description || `${name} 项目`,
     useCases: [],
     keyFeatures: [],
+    detailedSummary: '',
+    solvedProblemEn: description || `${name} project`,
+    useCasesEn: [],
+    keyFeaturesEn: [],
+    detailedSummaryEn: '',
   }
 }
 
