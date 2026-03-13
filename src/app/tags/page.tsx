@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Tags, LayoutGrid, List, Search, MoreHorizontal, Pencil, Trash2, GitMerge } from 'lucide-react'
+import { Tags, LayoutGrid, List, Search, MoreHorizontal, Pencil, Trash2, GitMerge, Sparkles, Loader2 } from 'lucide-react'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +33,7 @@ export default function TagsPage() {
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null)
   const [mergingTag, setMergingTag] = useState<Tag | null>(null)
   const [mergeTargetId, setMergeTargetId] = useState('')
+  const [cleaning, setCleaning] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -63,6 +64,21 @@ export default function TagsPage() {
       toast('标签已删除', 'success')
     } catch {
       toast('删除失败', 'error')
+    }
+  }
+
+  const handleCleanup = async () => {
+    setCleaning(true)
+    try {
+      const res = await api.post<{ data: { mergedCount: number; deletedCount: number } }>('/api/tags/cleanup')
+      toast(`清理完成：合并 ${res.data.mergedCount} 个，删除 ${res.data.deletedCount} 个`, 'success')
+      // Reload tags
+      const tagsRes = await api.get<{ data: Tag[] }>('/api/tags')
+      setTags(tagsRes.data)
+    } catch {
+      toast('清理失败', 'error')
+    } finally {
+      setCleaning(false)
     }
   }
 
@@ -113,6 +129,15 @@ export default function TagsPage() {
             <p className="text-muted-foreground mt-1">{tags.length} 个标签</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCleanup}
+              disabled={cleaning}
+            >
+              {cleaning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              清理标签
+            </Button>
             <Button
               variant={viewMode === 'cloud' ? 'default' : 'outline'}
               size="icon"
