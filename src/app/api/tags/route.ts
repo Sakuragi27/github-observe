@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+
   try {
     const tags = await prisma.tag.findMany({
       orderBy: { count: 'desc' },
