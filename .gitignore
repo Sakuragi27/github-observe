@@ -9,3 +9,4 @@ prisma/dev.db
 .vercel
 .claude
 .idea/
+docs
