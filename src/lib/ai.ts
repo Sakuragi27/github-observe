@@ -104,7 +104,7 @@ function getDefaultResult(
   language?: string | null,
   topics?: string[]
 ): AnalyzeResult {
-  const tags: { name: string; category: string }[] = [{ name: '待分类', category: '其他' }]
+  const tags: { name: string; category: string }[] = []
 
   if (language) {
     tags.push({ name: language, category: '技术领域' })
