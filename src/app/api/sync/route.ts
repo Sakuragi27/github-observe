@@ -4,6 +4,7 @@ import { getAllUserStars, getRepoReadme } from '@/lib/github'
 import { analyzeProject } from '@/lib/ai'
 import { decrypt } from '@/lib/encrypt'
 import { requireAuth } from '@/lib/auth'
+import { checkSyncRateLimit } from '@/lib/rate-limit'
 
 const CONCURRENCY = 3
 
@@ -11,6 +12,14 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth()
     if ('error' in auth) return auth.error
+
+    const rateLimit = checkSyncRateLimit(auth.user.userId)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: '同步频率超限，请稍后再试', retryAfterMs: rateLimit.retryAfterMs },
+        { status: 429 }
+      )
+    }
 
     const body = await request.json().catch(() => ({}))
     const force = body.force || false
