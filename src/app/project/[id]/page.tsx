@@ -6,12 +6,13 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Star, GitFork, ExternalLink, Heart,
-  Sparkles, BookOpen, Tag, Share2, Loader2, Copy,
+  Sparkles, BookOpen, Tag, Share2, Loader2, Copy, X,
 } from 'lucide-react'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/toast'
@@ -45,6 +46,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true)
   const [notes, setNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -94,6 +96,34 @@ export default function ProjectDetailPage() {
       toast('分享链接已复制到剪贴板', 'success')
     } catch {
       toast('创建分享失败', 'error')
+    }
+  }
+
+  const addTag = async () => {
+    if (!project || !newTagName.trim()) return
+    try {
+      const res = await api.post<{ data: { id: string; name: string; slug: string; category: string | null }[] }>(
+        `/api/projects/${project.id}/tags`,
+        { tagName: newTagName.trim() }
+      )
+      setProject({ ...project, tags: res.data })
+      setNewTagName('')
+      toast('标签已添加', 'success')
+    } catch {
+      toast('添加标签失败', 'error')
+    }
+  }
+
+  const removeTag = async (tagId: string) => {
+    if (!project) return
+    try {
+      const res = await api.delete<{ data: { id: string; name: string; slug: string; category: string | null }[] }>(
+        `/api/projects/${project.id}/tags?tagId=${tagId}`
+      )
+      setProject({ ...project, tags: res.data })
+      toast('标签已移除', 'success')
+    } catch {
+      toast('移除标签失败', 'error')
     }
   }
 
@@ -270,15 +300,30 @@ export default function ProjectDetailPage() {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (
-                    <Link key={tag.id} href={`/projects?tags=${tag.slug}`}>
-                      <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+                    <Badge key={tag.id} variant="secondary" className="group cursor-pointer hover:bg-secondary/80">
+                      <Link href={`/projects?tags=${tag.slug}`}>
                         {tag.name}
-                      </Badge>
-                    </Link>
+                      </Link>
+                      <button
+                        onClick={(e) => { e.preventDefault(); removeTag(tag.id) }}
+                        className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
                   ))}
                   {project.tags.length === 0 && (
                     <p className="text-sm text-muted-foreground">暂无标签</p>
                   )}
+                </div>
+                <div className="mt-3">
+                  <Input
+                    placeholder="添加标签，回车确认..."
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addTag() }}
+                    className="text-sm"
+                  />
                 </div>
               </CardContent>
             </Card>
