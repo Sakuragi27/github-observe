@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/toast'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { api } from '@/lib/api'
 
 interface ProjectDetail {
@@ -322,9 +324,11 @@ export default function ProjectDetailPage() {
               </CardHeader>
               <CardContent>
                 {project.readme ? (
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap break-words max-h-[600px] overflow-y-auto">
-                    {project.readme}
-                  </pre>
+                  <div className="prose prose-sm dark:prose-invert max-w-none max-h-[600px] overflow-y-auto">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {project.readme}
+                    </ReactMarkdown>
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">暂无 README</p>
                 )}

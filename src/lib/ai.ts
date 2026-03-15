@@ -89,7 +89,18 @@ export async function analyzeProject(
       const parsed = JSON.parse(jsonMatch[0])
       // Validate structure
       if (parsed.tags && Array.isArray(parsed.tags) && parsed.solvedProblem) {
-        return parsed
+        // Ensure all required fields exist with correct types
+        return {
+          tags: parsed.tags.slice(0, 5),
+          solvedProblem: parsed.solvedProblem || '',
+          useCases: Array.isArray(parsed.useCases) ? parsed.useCases : [],
+          keyFeatures: Array.isArray(parsed.keyFeatures) ? parsed.keyFeatures : [],
+          detailedSummary: parsed.detailedSummary || '',
+          solvedProblemEn: parsed.solvedProblemEn || '',
+          useCasesEn: Array.isArray(parsed.useCasesEn) ? parsed.useCasesEn : [],
+          keyFeaturesEn: Array.isArray(parsed.keyFeaturesEn) ? parsed.keyFeaturesEn : [],
+          detailedSummaryEn: parsed.detailedSummaryEn || '',
+        }
       }
     }
 
