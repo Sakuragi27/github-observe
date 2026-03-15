@@ -1,23 +1,25 @@
 import axios from 'axios'
 
-const VOLCANO_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/embeddings'
+const SILICONFLOW_API_URL = 'https://api.siliconflow.cn/v1/embeddings'
+const EMBEDDING_MODEL = 'BAAI/bge-large-zh-v1.5'
 
 export async function generateEmbedding(text: string): Promise<number[] | null> {
-  if (!process.env.VOLCANO_API_KEY || !process.env.VOLCANO_EMBEDDING_ENDPOINT_ID) {
+  if (!process.env.SILICONFLOW_API_KEY) {
     return null
   }
 
   try {
     const response = await axios.post(
-      VOLCANO_API_URL,
+      SILICONFLOW_API_URL,
       {
-        model: process.env.VOLCANO_EMBEDDING_ENDPOINT_ID,
-        input: [text.slice(0, 8000)], // Limit input length
+        model: EMBEDDING_MODEL,
+        input: text.slice(0, 512), // bge-large-zh-v1.5 max token ~512
+        encoding_format: 'float',
       },
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.VOLCANO_API_KEY}`,
+          Authorization: `Bearer ${process.env.SILICONFLOW_API_KEY}`,
         },
         timeout: 30000,
       }
@@ -48,17 +50,10 @@ export function buildProjectSearchText(project: {
       const a = JSON.parse(project.analysis)
       if (a.solvedProblem) parts.push(a.solvedProblem)
       if (a.solvedProblemEn) parts.push(a.solvedProblemEn)
-      if (a.detailedSummary) parts.push(a.detailedSummary)
-      if (a.detailedSummaryEn) parts.push(a.detailedSummaryEn)
       if (a.keyFeatures) parts.push(a.keyFeatures.join(', '))
-      if (a.keyFeaturesEn) parts.push(a.keyFeaturesEn.join(', '))
       if (a.useCases) parts.push(a.useCases.join(', '))
-      if (a.useCasesEn) parts.push(a.useCasesEn.join(', '))
     } catch {}
   }
 
-  // Add first part of readme
-  if (project.readme) parts.push(project.readme.slice(0, 1000))
-
-  return parts.join('\n').slice(0, 8000)
+  return parts.join(' ').slice(0, 512)
 }

@@ -70,7 +70,7 @@ model Project {
   syncedAt        DateTime?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  embedding       Unsupported("vector(2048)")?
+  embedding       Unsupported("vector(1024)")?
   tags            ProjectTag[]
   shares          Share[]
 
