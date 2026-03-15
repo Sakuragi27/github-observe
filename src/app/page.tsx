@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useLanguage } from '@/providers/language-provider'
 import { api } from '@/lib/api'
 
 interface DashboardData {
@@ -40,6 +41,7 @@ const fadeUp = {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const { lang, t } = useLanguage()
 
   useEffect(() => {
     api.get<{ data: DashboardData }>('/api/dashboard')
@@ -50,14 +52,14 @@ export default function DashboardPage() {
 
   const statCards = stats
     ? [
-        { label: '总项目数', value: stats.totalProjects, icon: FolderGit2, color: 'text-blue-500' },
-        { label: '已标签', value: stats.taggedCount, icon: Tags, color: 'text-emerald-500' },
-        { label: '收藏项目', value: stats.favoriteCount, icon: Heart, color: 'text-rose-500' },
+        { label: t('dashboard.totalProjects'), value: stats.totalProjects, icon: FolderGit2, color: 'text-blue-500' },
+        { label: t('dashboard.tagged'), value: stats.taggedCount, icon: Tags, color: 'text-emerald-500' },
+        { label: t('dashboard.favorites'), value: stats.favoriteCount, icon: Heart, color: 'text-rose-500' },
         {
-          label: '上次同步',
+          label: t('dashboard.lastSynced'),
           value: stats.lastSyncedAt
-            ? new Date(stats.lastSyncedAt).toLocaleDateString('zh-CN')
-            : '未同步',
+            ? new Date(stats.lastSyncedAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US')
+            : t('dashboard.notSynced'),
           icon: RefreshCw,
           color: 'text-amber-500',
         },
@@ -70,7 +72,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">管理和分析你收藏的 GitHub 项目</p>
+          <p className="text-muted-foreground mt-1">{t('dashboard.subtitle')}</p>
         </div>
 
         {/* Stat cards */}
@@ -122,7 +124,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-primary" />
-                    语言分布
+                    {t('dashboard.languageDistribution')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -164,7 +166,7 @@ export default function DashboardPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="h-[250px] flex items-center justify-center text-muted-foreground">暂无数据</div>
+                    <div className="h-[250px] flex items-center justify-center text-muted-foreground">{t('common.noData')}</div>
                   )}
                 </CardContent>
               </Card>
@@ -176,7 +178,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Tags className="h-5 w-5 text-primary" />
-                    热门标签
+                    {t('dashboard.popularTags')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -197,7 +199,7 @@ export default function DashboardPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[280px] flex items-center justify-center text-muted-foreground">暂无标签数据</div>
+                    <div className="h-[280px] flex items-center justify-center text-muted-foreground">{t('dashboard.noTagData')}</div>
                   )}
                 </CardContent>
               </Card>
@@ -212,10 +214,10 @@ export default function DashboardPage() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
-                  最近收藏
+                  {t('dashboard.recentlyStarred')}
                 </CardTitle>
                 <Link href="/projects" className="text-sm text-primary hover:underline">
-                  查看全部
+                  {t('dashboard.viewAll')}
                 </Link>
               </CardHeader>
               <CardContent>
@@ -239,7 +241,7 @@ export default function DashboardPage() {
                           </a>
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                          {project.description || '暂无描述'}
+                          {project.description || t('common.noDescription')}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
                           {project.language && (
@@ -263,10 +265,10 @@ export default function DashboardPage() {
         {!loading && stats && stats.totalProjects === 0 && (
           <Card className="p-12 text-center">
             <FolderGit2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">还没有项目</h3>
-            <p className="text-muted-foreground mb-6">先配置 GitHub Token，然后同步你的 Star 项目</p>
+            <h3 className="text-lg font-medium mb-2">{t('dashboard.noProjects')}</h3>
+            <p className="text-muted-foreground mb-6">{t('dashboard.noProjectsHint')}</p>
             <Link href="/settings">
-              <Button>前往设置</Button>
+              <Button>{t('dashboard.goToSettings')}</Button>
             </Link>
           </Card>
         )}

@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/providers/auth-provider'
 import { useTheme } from '@/providers/theme-provider'
 import { useToast } from '@/components/ui/toast'
+import { useLanguage } from '@/providers/language-provider'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -21,36 +22,37 @@ export default function SettingsPage() {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   const handleSaveToken = async () => {
     if (!githubToken.trim()) {
-      toast('请输入 GitHub Token', 'error')
+      toast(t('settings.enterToken'), 'error')
       return
     }
     setSaving(true)
     try {
       await api.post('/api/user/token', { githubToken })
-      toast('Token 保存成功', 'success')
+      toast(t('settings.tokenSaved'), 'success')
       setGithubToken('')
     } catch (err: any) {
-      toast(err.message || '保存失败', 'error')
+      toast(err.message || t('settings.saveFailed'), 'error')
     } finally {
       setSaving(false)
     }
   }
 
   const themeOptions = [
-    { value: 'light' as const, label: '亮色', icon: Sun },
-    { value: 'dark' as const, label: '暗色', icon: Moon },
-    { value: 'system' as const, label: '系统', icon: Monitor },
+    { value: 'light' as const, label: t('settings.light'), icon: Sun },
+    { value: 'dark' as const, label: t('settings.dark'), icon: Moon },
+    { value: 'system' as const, label: t('settings.system'), icon: Monitor },
   ]
 
   return (
     <AuthLayout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">设置</h1>
-          <p className="text-muted-foreground mt-1">管理你的账户和应用偏好</p>
+          <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('settings.subtitle')}</p>
         </div>
 
         {/* GitHub Token */}
@@ -63,7 +65,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              配置 GitHub Personal Access Token 以同步你的 Star 项目。Token 会被加密存储。
+              {t('settings.tokenDescription')}
             </p>
             <div className="flex gap-3">
               <div className="relative flex-1">
@@ -84,12 +86,11 @@ export default function SettingsPage() {
               </div>
               <Button onClick={handleSaveToken} disabled={saving}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                保存
+                {t('common.save')}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              在 GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens 创建，
-              需要 Starring 和 Metadata 的读取权限。
+              {t('settings.tokenHint')}
             </p>
           </CardContent>
         </Card>
@@ -99,7 +100,7 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Sun className="h-5 w-5 text-primary" />
-              外观设置
+              {t('settings.appearance')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -126,19 +127,19 @@ export default function SettingsPage() {
         {/* Account */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">账户信息</CardTitle>
+            <CardTitle className="text-lg">{t('settings.account')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">邮箱</p>
+                <p className="text-sm font-medium">{t('settings.email')}</p>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
             </div>
             <Separator />
             <Button variant="destructive" onClick={logout} className="w-full">
               <LogOut className="h-4 w-4 mr-2" />
-              退出登录
+              {t('settings.signOut')}
             </Button>
           </CardContent>
         </Card>

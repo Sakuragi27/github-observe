@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Github, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useLanguage } from '@/providers/language-provider'
 
 export default function LoginPage() {
   const [csrfToken, setCsrfToken] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
+  const { t } = useLanguage()
 
   useEffect(() => {
     fetch('/api/auth/csrf')
@@ -62,7 +64,7 @@ export default function LoginPage() {
               <Github className="w-9 h-9 text-primary" />
             </motion.div>
             <h1 className="text-3xl font-bold text-foreground">GitHub Observe</h1>
-            <p className="mt-2 text-muted-foreground">智能管理你的 GitHub Stars</p>
+            <p className="mt-2 text-muted-foreground">{t('login.tagline')}</p>
           </div>
 
           {/* OAuth buttons */}
@@ -82,7 +84,7 @@ export default function LoginPage() {
                 ) : (
                   <Github className="w-5 h-5" />
                 )}
-                {loading === 'github' ? '跳转中...' : '使用 GitHub 登录'}
+                {loading === 'github' ? t('login.redirecting') : t('login.github')}
               </Button>
             </form>
 
@@ -118,13 +120,13 @@ export default function LoginPage() {
                     />
                   </svg>
                 )}
-                {loading === 'google' ? '跳转中...' : '使用 Google 登录'}
+                {loading === 'google' ? t('login.redirecting') : t('login.google')}
               </Button>
             </form>
           </div>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            登录即表示同意我们的服务条款和隐私政策
+            {t('login.terms')}
           </p>
         </div>
       </motion.div>

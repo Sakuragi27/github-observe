@@ -15,10 +15,12 @@ import {
   Sun,
   ChevronLeft,
   Menu,
+  Globe,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/providers/auth-provider"
 import { useTheme } from "@/providers/theme-provider"
+import { useLanguage } from "@/providers/language-provider"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -28,19 +30,25 @@ import {
 } from "@/components/ui/tooltip"
 import { useState } from "react"
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "项目列表", icon: FolderGit2 },
-  { href: "/tags", label: "标签管理", icon: Tags },
-  { href: "/sync", label: "同步", icon: RefreshCw },
-  { href: "/settings", label: "设置", icon: Settings },
+const navItemDefs = [
+  { href: "/", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
+  { href: "/projects", labelKey: "sidebar.projects", icon: FolderGit2 },
+  { href: "/tags", labelKey: "sidebar.tags", icon: Tags },
+  { href: "/sync", labelKey: "sidebar.sync", icon: RefreshCw },
+  { href: "/settings", labelKey: "sidebar.settings", icon: Settings },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const { theme, setTheme, resolvedTheme } = useTheme()
+  const { lang, setLang, t } = useLanguage()
   const [collapsed, setCollapsed] = useState(false)
+
+  const navItems = navItemDefs.map((item) => ({
+    ...item,
+    label: t(item.labelKey),
+  }))
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/"
@@ -138,13 +146,22 @@ export function Sidebar() {
 
         {/* Bottom section */}
         <div className="border-t px-2 py-3 space-y-2">
+          {/* Language toggle */}
+          <button
+            onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full transition-colors"
+          >
+            <Globe className="h-5 w-5 shrink-0" />
+            {!collapsed && <span>{lang === 'zh' ? '中文 / EN' : 'EN / 中文'}</span>}
+          </button>
+
           {/* Theme toggle */}
           <button
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full transition-colors"
           >
             {resolvedTheme === "dark" ? <Sun className="h-5 w-5 shrink-0" /> : <Moon className="h-5 w-5 shrink-0" />}
-            {!collapsed && <span>{resolvedTheme === "dark" ? "亮色模式" : "暗黑模式"}</span>}
+            {!collapsed && <span>{resolvedTheme === "dark" ? t('sidebar.lightMode') : t('sidebar.darkMode')}</span>}
           </button>
 
           <Separator />

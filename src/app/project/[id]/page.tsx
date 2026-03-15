@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Star, GitFork, ExternalLink, Heart,
-  Sparkles, BookOpen, Tag, Share2, Loader2, Copy, X, FileText, Globe,
+  Sparkles, BookOpen, Tag, Share2, Loader2, Copy, X, FileText,
 } from 'lucide-react'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/toast'
+import { useLanguage } from '@/providers/language-provider'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { api } from '@/lib/api'
@@ -55,7 +56,7 @@ export default function ProjectDetailPage() {
   const [notes, setNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
   const [newTagName, setNewTagName] = useState('')
-  const [lang, setLang] = useState<'zh' | 'en'>('zh')
+  const { lang, t } = useLanguage()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function ProjectDetailPage() {
         setProject(res.data)
         setNotes(res.data.userNotes || '')
       })
-      .catch(() => toast('获取项目详情失败', 'error'))
+      .catch(() => toast(t('projectDetail.fetchFailed'), 'error'))
       .finally(() => setLoading(false))
   }, [params.id, toast])
 
@@ -76,9 +77,9 @@ export default function ProjectDetailPage() {
         isFavorite: !project.isFavorite,
       })
       setProject(res.data)
-      toast(res.data.isFavorite ? '已收藏' : '已取消收藏', 'success')
+      toast(res.data.isFavorite ? t('common.saved') : t('common.unsaved'), 'success')
     } catch {
-      toast('操作失败', 'error')
+      toast(t('common.operationFailed'), 'error')
     }
   }
 
@@ -87,9 +88,9 @@ export default function ProjectDetailPage() {
     setSavingNotes(true)
     try {
       await api.patch(`/api/projects/${project.id}`, { userNotes: notes })
-      toast('笔记已保存', 'success')
+      toast(t('projectDetail.notesSaved'), 'success')
     } catch {
-      toast('保存失败', 'error')
+      toast(t('settings.saveFailed'), 'error')
     } finally {
       setSavingNotes(false)
     }
@@ -102,9 +103,9 @@ export default function ProjectDetailPage() {
         projectId: project.id,
       })
       await navigator.clipboard.writeText(window.location.origin + res.data.shareUrl)
-      toast('分享链接已复制到剪贴板', 'success')
+      toast(t('projectDetail.shareCopied'), 'success')
     } catch {
-      toast('创建分享失败', 'error')
+      toast(t('projectDetail.shareFailed'), 'error')
     }
   }
 
@@ -117,9 +118,9 @@ export default function ProjectDetailPage() {
       )
       setProject({ ...project, tags: res.data })
       setNewTagName('')
-      toast('标签已添加', 'success')
+      toast(t('projectDetail.tagAdded'), 'success')
     } catch {
-      toast('添加标签失败', 'error')
+      toast(t('projectDetail.tagAddFailed'), 'error')
     }
   }
 
@@ -130,9 +131,9 @@ export default function ProjectDetailPage() {
         `/api/projects/${project.id}/tags?tagId=${tagId}`
       )
       setProject({ ...project, tags: res.data })
-      toast('标签已移除', 'success')
+      toast(t('projectDetail.tagRemoved'), 'success')
     } catch {
-      toast('移除标签失败', 'error')
+      toast(t('projectDetail.tagRemoveFailed'), 'error')
     }
   }
 
@@ -152,9 +153,9 @@ export default function ProjectDetailPage() {
     return (
       <AuthLayout>
         <div className="text-center py-12">
-          <h2 className="text-xl font-medium">项目不存在</h2>
+          <h2 className="text-xl font-medium">{t('projectDetail.projectNotFound')}</h2>
           <Link href="/projects" className="text-primary hover:underline mt-2 inline-block">
-            返回项目列表
+            {t('projectDetail.backToProjects')}
           </Link>
         </div>
       </AuthLayout>
@@ -176,14 +177,14 @@ export default function ProjectDetailPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          {lang === 'zh' ? '返回项目列表' : 'Back to projects'}
+          {t('projectDetail.backToProjects')}
         </Link>
 
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold mb-2">{project.fullName}</h1>
-            <p className="text-muted-foreground">{project.description || (lang === 'zh' ? '暂无描述' : 'No description')}</p>
+            <p className="text-muted-foreground">{project.description || t('common.noDescription')}</p>
             <div className="flex items-center gap-4 mt-3">
               {project.language && (
                 <Badge variant="secondary">
@@ -206,38 +207,13 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Global language toggle */}
-            <div className="flex items-center gap-1 rounded-lg border p-0.5">
-              <button
-                onClick={() => setLang('zh')}
-                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
-                  lang === 'zh'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Globe className="h-3 w-3" />
-                中文
-              </button>
-              <button
-                onClick={() => setLang('en')}
-                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
-                  lang === 'en'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Globe className="h-3 w-3" />
-                EN
-              </button>
-            </div>
             <Button variant="outline" onClick={toggleFavorite}>
               <Heart className={`h-4 w-4 mr-2 ${project.isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
-              {project.isFavorite ? (lang === 'zh' ? '已收藏' : 'Saved') : (lang === 'zh' ? '收藏' : 'Save')}
+              {project.isFavorite ? t('common.saved') : t('projectDetail.save')}
             </Button>
             <Button variant="outline" onClick={shareProject}>
               <Share2 className="h-4 w-4 mr-2" />
-              {lang === 'zh' ? '分享' : 'Share'}
+              {t('projectDetail.share')}
             </Button>
             <a href={project.htmlUrl} target="_blank" rel="noopener noreferrer">
               <Button>
@@ -259,13 +235,13 @@ export default function ProjectDetailPage() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
-                    {lang === 'zh' ? 'AI 智能摘要' : 'AI Summary'}
+                    {t('projectDetail.aiSummary')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium mb-1">
-                      {lang === 'zh' ? '解决的问题' : 'Problem Solved'}
+                      {t('projectDetail.problemSolved')}
                     </h4>
                     <p className="text-sm text-muted-foreground">
                       {lang === 'zh' ? analysis.solvedProblem : (analysis.solvedProblemEn || analysis.solvedProblem)}
@@ -275,7 +251,7 @@ export default function ProjectDetailPage() {
                   {((lang === 'zh' ? analysis.keyFeatures : (analysis.keyFeaturesEn || analysis.keyFeatures)) || []).length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium mb-2">
-                        {lang === 'zh' ? '核心特性' : 'Key Features'}
+                        {t('projectDetail.keyFeatures')}
                       </h4>
                       <ul className="space-y-1">
                         {(lang === 'zh' ? analysis.keyFeatures : (analysis.keyFeaturesEn || analysis.keyFeatures)).map((feature, i) => (
@@ -291,7 +267,7 @@ export default function ProjectDetailPage() {
                   {((lang === 'zh' ? analysis.useCases : (analysis.useCasesEn || analysis.useCases)) || []).length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium mb-2">
-                        {lang === 'zh' ? '适用场景' : 'Use Cases'}
+                        {t('projectDetail.useCases')}
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {(lang === 'zh' ? analysis.useCases : (analysis.useCasesEn || analysis.useCases)).map((uc, i) => (
@@ -304,7 +280,7 @@ export default function ProjectDetailPage() {
                   {(lang === 'zh' ? analysis.detailedSummary : (analysis.detailedSummaryEn || analysis.detailedSummary)) && (
                     <div>
                       <h4 className="text-sm font-medium mb-2">
-                        {lang === 'zh' ? '详细介绍' : 'Detailed Introduction'}
+                        {t('projectDetail.detailedIntro')}
                       </h4>
                       <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
                         {lang === 'zh' ? analysis.detailedSummary : (analysis.detailedSummaryEn || analysis.detailedSummary)}
@@ -331,7 +307,7 @@ export default function ProjectDetailPage() {
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{lang === 'zh' ? '暂无 README' : 'No README available'}</p>
+                  <p className="text-sm text-muted-foreground">{t('projectDetail.noReadme')}</p>
                 )}
               </CardContent>
             </Card>
@@ -341,20 +317,20 @@ export default function ProjectDetailPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  {lang === 'zh' ? '我的笔记' : 'My Notes'}
+                  {t('projectDetail.myNotes')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder={lang === 'zh' ? '添加你的笔记...' : 'Add your notes...'}
+                  placeholder={t('projectDetail.addNotesPlaceholder')}
                   className="w-full min-h-[120px] bg-transparent border rounded-lg p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <div className="flex justify-end mt-3">
                   <Button size="sm" onClick={saveNotes} disabled={savingNotes}>
                     {savingNotes && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    {lang === 'zh' ? '保存笔记' : 'Save'}
+                    {t('projectDetail.saveNotes')}
                   </Button>
                 </div>
               </CardContent>
@@ -368,7 +344,7 @@ export default function ProjectDetailPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Tag className="h-5 w-5 text-primary" />
-                  {lang === 'zh' ? '标签' : 'Tags'}
+                  {t('projectDetail.tags')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -387,12 +363,12 @@ export default function ProjectDetailPage() {
                     </Badge>
                   ))}
                   {project.tags.length === 0 && (
-                    <p className="text-sm text-muted-foreground">{lang === 'zh' ? '暂无标签' : 'No tags'}</p>
+                    <p className="text-sm text-muted-foreground">{t('projectDetail.noTags')}</p>
                   )}
                 </div>
                 <div className="mt-3">
                   <Input
-                    placeholder={lang === 'zh' ? '添加标签，回车确认...' : 'Add tag, press Enter...'}
+                    placeholder={t('projectDetail.addTagPlaceholder')}
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') addTag() }}
@@ -405,21 +381,21 @@ export default function ProjectDetailPage() {
             {/* Project info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">{lang === 'zh' ? '项目信息' : 'Project Info'}</CardTitle>
+                <CardTitle className="text-sm">{t('projectDetail.projectInfo')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{lang === 'zh' ? 'Star 数' : 'Stars'}</span>
+                  <span className="text-muted-foreground">{t('projectDetail.stars')}</span>
                   <span className="font-medium">{project.stargazersCount.toLocaleString()}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{lang === 'zh' ? '语言' : 'Language'}</span>
+                  <span className="text-muted-foreground">{t('projectDetail.language')}</span>
                   <span className="font-medium">{project.language || '-'}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{lang === 'zh' ? '收藏时间' : 'Starred At'}</span>
+                  <span className="text-muted-foreground">{t('projectDetail.starredAt')}</span>
                   <span className="font-medium">
                     {project.starredAt
                       ? new Date(project.starredAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US')

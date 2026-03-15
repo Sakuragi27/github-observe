@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/toast'
+import { useLanguage } from '@/providers/language-provider'
 import type { SyncSSEEvent } from '@/app/api/sync/route'
 
 interface SyncProgress {
@@ -31,6 +32,7 @@ export default function SyncPage() {
   const [result, setResult] = useState<SyncResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const { t } = useLanguage()
   const router = useRouter()
   const abortRef = useRef<AbortController | null>(null)
 
@@ -54,11 +56,11 @@ export default function SyncPage() {
       // Handle non-SSE error responses (rate limit, auth errors)
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || '同步失败')
+        throw new Error(data.error || t('sync.syncFailed'))
       }
 
       const reader = response.body?.getReader()
-      if (!reader) throw new Error('无法读取响应流')
+      if (!reader) throw new Error('Unable to read response stream')
 
       const decoder = new TextDecoder()
       let buffer = ''
@@ -102,7 +104,7 @@ export default function SyncPage() {
               })
               setProgress({ phase: 'done', current: event.total, total: event.total })
               toast(
-                `同步完成：新增 ${event.newCount} 个，更新 ${event.updatedCount} 个`,
+                `${t('sync.syncComplete')}: ${t('sync.new')} ${event.newCount}, ${t('sync.updated')} ${event.updatedCount}`,
                 'success'
               )
               break
@@ -115,14 +117,14 @@ export default function SyncPage() {
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      const message = err instanceof Error ? err.message : '同步失败'
+      const message = err instanceof Error ? err.message : t('sync.syncFailed')
       setError(message)
       toast(message, 'error')
     } finally {
       setSyncing(false)
       abortRef.current = null
     }
-  }, [force, toast])
+  }, [force, toast, t])
 
   const percentage =
     progress && progress.total > 0
@@ -133,9 +135,9 @@ export default function SyncPage() {
     <AuthLayout>
       <div className="max-w-lg mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">同步 GitHub Stars</h1>
+          <h1 className="text-2xl font-bold">{t('sync.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            从 GitHub 获取你收藏的项目并进行 AI 分析
+            {t('sync.subtitle')}
           </p>
         </div>
 
@@ -143,14 +145,14 @@ export default function SyncPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <RefreshCw className="h-5 w-5 text-primary" />
-              同步设置
+              {t('sync.settings')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">强制重新分析</p>
-                <p className="text-xs text-muted-foreground">重新分析已存在的项目</p>
+                <p className="text-sm font-medium">{t('sync.forceReanalyze')}</p>
+                <p className="text-xs text-muted-foreground">{t('sync.forceReanalyzeDesc')}</p>
               </div>
               <Switch checked={force} onCheckedChange={setForce} />
             </div>
@@ -163,12 +165,12 @@ export default function SyncPage() {
               {syncing ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  同步中...
+                  {t('sync.syncing')}
                 </>
               ) : (
                 <>
                   <RefreshCw className="h-5 w-5 mr-2" />
-                  开始同步
+                  {t('sync.startSync')}
                 </>
               )}
             </Button>
@@ -185,10 +187,10 @@ export default function SyncPage() {
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {progress.phase === 'fetching' && '正在获取 Star 列表...'}
+                    {progress.phase === 'fetching' && t('sync.fetchingStars')}
                     {progress.phase === 'analyzing' &&
-                      `正在分析 (${progress.current}/${progress.total})`}
-                    {progress.phase === 'done' && '同步完成'}
+                      `${t('sync.analyzing')} (${progress.current}/${progress.total})`}
+                    {progress.phase === 'done' && t('sync.syncComplete')}
                   </span>
                   {progress.phase === 'analyzing' && (
                     <span className="font-mono text-sm font-medium">{percentage}%</span>
@@ -219,7 +221,7 @@ export default function SyncPage() {
 
                 {progress.phase === 'fetching' && (
                   <p className="text-xs text-muted-foreground">
-                    同步过程可能需要几分钟，取决于 Star 数量
+                    {t('sync.syncMayTake')}
                   </p>
                 )}
               </CardContent>
@@ -238,7 +240,7 @@ export default function SyncPage() {
                 <div className="flex items-center gap-3">
                   <AlertCircle className="h-6 w-6 text-red-500 shrink-0" />
                   <div>
-                    <h3 className="font-medium text-red-500">同步失败</h3>
+                    <h3 className="font-medium text-red-500">{t('sync.syncFailed')}</h3>
                     <p className="text-sm text-muted-foreground mt-1">{error}</p>
                   </div>
                 </div>
@@ -257,25 +259,25 @@ export default function SyncPage() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                  <h3 className="font-medium text-lg">同步完成</h3>
+                  <h3 className="font-medium text-lg">{t('sync.syncComplete')}</h3>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold">{result.total}</div>
-                    <div className="text-xs text-muted-foreground">总项目</div>
+                    <div className="text-xs text-muted-foreground">{t('sync.total')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-500">
                       {result.newCount}
                     </div>
-                    <div className="text-xs text-muted-foreground">新增</div>
+                    <div className="text-xs text-muted-foreground">{t('sync.new')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-500">
                       {result.updatedCount}
                     </div>
-                    <div className="text-xs text-muted-foreground">更新</div>
+                    <div className="text-xs text-muted-foreground">{t('sync.updated')}</div>
                   </div>
                 </div>
 
@@ -284,7 +286,7 @@ export default function SyncPage() {
                   onClick={() => router.push('/projects')}
                   className="w-full"
                 >
-                  查看项目列表
+                  {t('sync.viewProjects')}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </CardContent>

@@ -20,6 +20,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
+import { useLanguage } from '@/providers/language-provider'
 import { api } from '@/lib/api'
 import type { Tag } from '@/lib/api'
 
@@ -35,6 +36,7 @@ export default function TagsPage() {
   const [mergeTargetId, setMergeTargetId] = useState('')
   const [cleaning, setCleaning] = useState(false)
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   useEffect(() => {
     api.get<{ data: Tag[] }>('/api/tags')
@@ -49,9 +51,9 @@ export default function TagsPage() {
       const res = await api.patch<{ data: Tag }>(`/api/tags/${editingTag.id}`, { name: editName.trim() })
       setTags(tags.map((t) => (t.id === editingTag.id ? { ...t, name: res.data.name, slug: res.data.slug } : t)))
       setEditingTag(null)
-      toast('标签已重命名', 'success')
+      toast(t('tags.tagRenamed'), 'success')
     } catch {
-      toast('重命名失败', 'error')
+      toast(t('tags.renameFailed'), 'error')
     }
   }
 
@@ -61,9 +63,9 @@ export default function TagsPage() {
       await api.delete(`/api/tags/${deletingTag.id}`)
       setTags(tags.filter((t) => t.id !== deletingTag.id))
       setDeletingTag(null)
-      toast('标签已删除', 'success')
+      toast(t('tags.tagDeleted'), 'success')
     } catch {
-      toast('删除失败', 'error')
+      toast(t('tags.deleteFailed'), 'error')
     }
   }
 
@@ -71,12 +73,12 @@ export default function TagsPage() {
     setCleaning(true)
     try {
       const res = await api.post<{ data: { mergedCount: number; deletedCount: number } }>('/api/tags/cleanup')
-      toast(`清理完成：合并 ${res.data.mergedCount} 个，删除 ${res.data.deletedCount} 个`, 'success')
+      toast(`${t('tags.cleanupComplete')}: ${res.data.mergedCount} merged, ${res.data.deletedCount} deleted`, 'success')
       // Reload tags
       const tagsRes = await api.get<{ data: Tag[] }>('/api/tags')
       setTags(tagsRes.data)
     } catch {
-      toast('清理失败', 'error')
+      toast(t('tags.cleanupFailed'), 'error')
     } finally {
       setCleaning(false)
     }
@@ -94,9 +96,9 @@ export default function TagsPage() {
       )
       setMergingTag(null)
       setMergeTargetId('')
-      toast('标签已合并', 'success')
+      toast(t('tags.tagMerged'), 'success')
     } catch {
-      toast('合并失败', 'error')
+      toast(t('tags.mergeFailed'), 'error')
     }
   }
 
@@ -125,8 +127,8 @@ export default function TagsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">标签管理</h1>
-            <p className="text-muted-foreground mt-1">{tags.length} 个标签</p>
+            <h1 className="text-2xl font-bold">{t('tags.title')}</h1>
+            <p className="text-muted-foreground mt-1">{tags.length} {t('common.tags')}</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -136,7 +138,7 @@ export default function TagsPage() {
               disabled={cleaning}
             >
               {cleaning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
-              清理标签
+              {t('tags.cleanTags')}
             </Button>
             <Button
               variant={viewMode === 'cloud' ? 'default' : 'outline'}
@@ -159,7 +161,7 @@ export default function TagsPage() {
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="搜索标签..."
+            placeholder={t('tags.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -202,7 +204,7 @@ export default function TagsPage() {
                   </motion.div>
                 ))}
                 {filtered.length === 0 && (
-                  <p className="text-muted-foreground">没有找到匹配的标签</p>
+                  <p className="text-muted-foreground">{t('tags.noMatchingTags')}</p>
                 )}
               </motion.div>
             </CardContent>
@@ -234,15 +236,15 @@ export default function TagsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => { setEditingTag(tag); setEditName(tag.name) }}>
                               <Pencil className="h-4 w-4 mr-2" />
-                              重命名
+                              {t('tags.rename')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => { setMergingTag(tag); setMergeTargetId('') }}>
                               <GitMerge className="h-4 w-4 mr-2" />
-                              合并到...
+                              {t('tags.mergeTo')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setDeletingTag(tag)} className="text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
-                              删除
+                              {t('common.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -255,7 +257,7 @@ export default function TagsPage() {
             {uncategorized.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">未分类</CardTitle>
+                  <CardTitle className="text-lg">{t('tags.uncategorized')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
@@ -276,15 +278,15 @@ export default function TagsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => { setEditingTag(tag); setEditName(tag.name) }}>
                               <Pencil className="h-4 w-4 mr-2" />
-                              重命名
+                              {t('tags.rename')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => { setMergingTag(tag); setMergeTargetId('') }}>
                               <GitMerge className="h-4 w-4 mr-2" />
-                              合并到...
+                              {t('tags.mergeTo')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setDeletingTag(tag)} className="text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
-                              删除
+                              {t('common.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -301,17 +303,17 @@ export default function TagsPage() {
         <Dialog open={!!editingTag} onOpenChange={(open) => !open && setEditingTag(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>重命名标签</DialogTitle>
+              <DialogTitle>{t('tags.renameTag')}</DialogTitle>
             </DialogHeader>
             <Input
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              placeholder="输入新名称"
+              placeholder={t('tags.enterNewName')}
               onKeyDown={(e) => { if (e.key === 'Enter') handleRename() }}
             />
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingTag(null)}>取消</Button>
-              <Button onClick={handleRename}>确认</Button>
+              <Button variant="outline" onClick={() => setEditingTag(null)}>{t('common.cancel')}</Button>
+              <Button onClick={handleRename}>{t('common.confirm')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -320,14 +322,14 @@ export default function TagsPage() {
         <Dialog open={!!deletingTag} onOpenChange={(open) => !open && setDeletingTag(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>确认删除</DialogTitle>
+              <DialogTitle>{t('tags.confirmDelete')}</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground">
-              确定要删除标签「{deletingTag?.name}」吗？该标签下的 {deletingTag?.count || 0} 个项目关联将被移除，此操作不可撤销。
+              {t('tags.deleteConfirmMsg').replace('{name}', deletingTag?.name || '').replace('{count}', String(deletingTag?.count || 0))}
             </p>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeletingTag(null)}>取消</Button>
-              <Button variant="destructive" onClick={handleDelete}>删除</Button>
+              <Button variant="outline" onClick={() => setDeletingTag(null)}>{t('common.cancel')}</Button>
+              <Button variant="destructive" onClick={handleDelete}>{t('common.delete')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -336,14 +338,14 @@ export default function TagsPage() {
         <Dialog open={!!mergingTag} onOpenChange={(open) => { if (!open) { setMergingTag(null); setMergeTargetId('') } }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>合并标签</DialogTitle>
+              <DialogTitle>{t('tags.mergeTags')}</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground">
-              将「{mergingTag?.name}」合并到以下标签，合并后原标签将被删除：
+              {t('tags.mergeConfirmMsg').replace('{name}', mergingTag?.name || '')}
             </p>
             <Select value={mergeTargetId} onValueChange={setMergeTargetId}>
               <SelectTrigger>
-                <SelectValue placeholder="选择目标标签" />
+                <SelectValue placeholder={t('tags.selectTarget')} />
               </SelectTrigger>
               <SelectContent>
                 {tags
@@ -356,8 +358,8 @@ export default function TagsPage() {
               </SelectContent>
             </Select>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setMergingTag(null); setMergeTargetId('') }}>取消</Button>
-              <Button onClick={handleMerge} disabled={!mergeTargetId}>确认合并</Button>
+              <Button variant="outline" onClick={() => { setMergingTag(null); setMergeTargetId('') }}>{t('common.cancel')}</Button>
+              <Button onClick={handleMerge} disabled={!mergeTargetId}>{t('tags.confirmMerge')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

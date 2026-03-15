@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
+import { useLanguage } from '@/providers/language-provider'
 import { api } from '@/lib/api'
 import type { Project, Tag, ProjectListResponse } from '@/lib/api'
 
@@ -34,6 +35,7 @@ export default function ProjectsPage() {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 })
 
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   const fetchProjects = useCallback(async () => {
     setLoading(true)
@@ -50,7 +52,7 @@ export default function ProjectsPage() {
       setProjects(res.data.projects)
       setPagination({ total: res.data.pagination.total, totalPages: res.data.pagination.totalPages })
     } catch {
-      toast('获取项目失败', 'error')
+      toast(t('projects.fetchFailed'), 'error')
     } finally {
       setLoading(false)
     }
@@ -87,9 +89,9 @@ export default function ProjectsPage() {
       setProjects((prev) =>
         prev.map((p) => (p.id === projectId ? { ...p, isFavorite: !current } : p))
       )
-      toast(!current ? '已收藏' : '已取消收藏', 'success')
+      toast(!current ? t('common.saved') : t('common.unsaved'), 'success')
     } catch {
-      toast('操作失败', 'error')
+      toast(t('common.operationFailed'), 'error')
     }
   }
 
@@ -101,8 +103,8 @@ export default function ProjectsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">项目列表</h1>
-            <p className="text-muted-foreground mt-1">{pagination.total} 个项目</p>
+            <h1 className="text-2xl font-bold">{t('projects.title')}</h1>
+            <p className="text-muted-foreground mt-1">{pagination.total} {t('common.projects')}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -127,7 +129,7 @@ export default function ProjectsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="搜索项目..."
+              placeholder={t('projects.searchPlaceholder')}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10"
@@ -139,7 +141,7 @@ export default function ProjectsPage() {
             className="gap-2"
           >
             <SlidersHorizontal className="h-4 w-4" />
-            筛选
+            {t('projects.filter')}
           </Button>
           <Button
             variant={favoriteOnly ? 'default' : 'outline'}
@@ -163,7 +165,7 @@ export default function ProjectsPage() {
                 <CardContent className="p-4 space-y-4">
                   {/* Tags */}
                   <div>
-                    <h4 className="text-sm font-medium mb-2">标签筛选</h4>
+                    <h4 className="text-sm font-medium mb-2">{t('projects.filterByTag')}</h4>
                     <div className="flex flex-wrap gap-2">
                       {tags.slice(0, 20).map((tag) => (
                         <Badge
@@ -180,7 +182,7 @@ export default function ProjectsPage() {
 
                   {/* Language */}
                   <div>
-                    <h4 className="text-sm font-medium mb-2">语言筛选</h4>
+                    <h4 className="text-sm font-medium mb-2">{t('projects.filterByLanguage')}</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedLanguage && (
                         <Badge variant="default" className="cursor-pointer" onClick={() => { setSelectedLanguage(''); setPage(1) }}>
@@ -202,12 +204,12 @@ export default function ProjectsPage() {
 
                   {/* Sort */}
                   <div>
-                    <h4 className="text-sm font-medium mb-2">排序</h4>
+                    <h4 className="text-sm font-medium mb-2">{t('projects.sort')}</h4>
                     <div className="flex gap-2">
                       {[
-                        { key: 'starredAt', label: '收藏时间' },
-                        { key: 'stargazersCount', label: 'Star 数' },
-                        { key: 'name', label: '名称' },
+                        { key: 'starredAt', label: t('projects.starredDate') },
+                        { key: 'stargazersCount', label: t('projects.stars') },
+                        { key: 'name', label: t('projects.name') },
                       ].map((s) => (
                         <Badge
                           key={s.key}
@@ -242,8 +244,8 @@ export default function ProjectsPage() {
         ) : projects.length === 0 ? (
           <Card className="p-12 text-center">
             <Search className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">没有找到项目</h3>
-            <p className="text-muted-foreground">尝试调整搜索条件或筛选条件</p>
+            <h3 className="text-lg font-medium mb-2">{t('projects.noProjects')}</h3>
+            <p className="text-muted-foreground">{t('projects.noProjectsHint')}</p>
           </Card>
         ) : viewMode === 'grid' ? (
           <motion.div
@@ -278,7 +280,7 @@ export default function ProjectsPage() {
                       </div>
 
                       <p className="text-xs text-muted-foreground line-clamp-2 mb-3 min-h-[2rem]">
-                        {project.solvedProblem || project.description || '暂无描述'}
+                        {project.solvedProblem || project.description || t('common.noDescription')}
                       </p>
 
                       <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -321,7 +323,7 @@ export default function ProjectsPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
-                        {project.solvedProblem || project.description || '暂无描述'}
+                        {project.solvedProblem || project.description || t('common.noDescription')}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
@@ -353,7 +355,7 @@ export default function ProjectsPage() {
               onClick={() => setPage(page - 1)}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              上一页
+              {t('projects.previous')}
             </Button>
             <span className="text-sm text-muted-foreground">
               {page} / {pagination.totalPages}
@@ -364,7 +366,7 @@ export default function ProjectsPage() {
               disabled={page === pagination.totalPages}
               onClick={() => setPage(page + 1)}
             >
-              下一页
+              {t('projects.next')}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
