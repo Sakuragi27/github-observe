@@ -99,7 +99,7 @@ export async function getRepoReadme(token: string, owner: string, repo: string):
     )
 
     const content = Buffer.from(response.data.content, 'base64').toString('utf-8')
-    return content.slice(0, 3000)
+    return content
   } catch {
     return ''
   }

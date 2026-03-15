@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Star, GitFork, ExternalLink, Heart,
-  Sparkles, BookOpen, Tag, Share2, Loader2, Copy, X, FileText,
+  Sparkles, BookOpen, Tag, Share2, Loader2, Copy, X, FileText, Globe,
 } from 'lucide-react'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -176,14 +176,14 @@ export default function ProjectDetailPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          返回项目列表
+          {lang === 'zh' ? '返回项目列表' : 'Back to projects'}
         </Link>
 
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold mb-2">{project.fullName}</h1>
-            <p className="text-muted-foreground">{project.description || '暂无描述'}</p>
+            <p className="text-muted-foreground">{project.description || (lang === 'zh' ? '暂无描述' : 'No description')}</p>
             <div className="flex items-center gap-4 mt-3">
               {project.language && (
                 <Badge variant="secondary">
@@ -206,13 +206,38 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Global language toggle */}
+            <div className="flex items-center gap-1 rounded-lg border p-0.5">
+              <button
+                onClick={() => setLang('zh')}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+                  lang === 'zh'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Globe className="h-3 w-3" />
+                中文
+              </button>
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+                  lang === 'en'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Globe className="h-3 w-3" />
+                EN
+              </button>
+            </div>
             <Button variant="outline" onClick={toggleFavorite}>
               <Heart className={`h-4 w-4 mr-2 ${project.isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
-              {project.isFavorite ? '已收藏' : '收藏'}
+              {project.isFavorite ? (lang === 'zh' ? '已收藏' : 'Saved') : (lang === 'zh' ? '收藏' : 'Save')}
             </Button>
             <Button variant="outline" onClick={shareProject}>
               <Share2 className="h-4 w-4 mr-2" />
-              分享
+              {lang === 'zh' ? '分享' : 'Share'}
             </Button>
             <a href={project.htmlUrl} target="_blank" rel="noopener noreferrer">
               <Button>
@@ -232,34 +257,10 @@ export default function ProjectDetailPage() {
             {analysis && (
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      AI 智能摘要
-                    </CardTitle>
-                    <div className="flex items-center gap-1 rounded-lg border p-0.5">
-                      <button
-                        onClick={() => setLang('zh')}
-                        className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                          lang === 'zh'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        中
-                      </button>
-                      <button
-                        onClick={() => setLang('en')}
-                        className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                          lang === 'en'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        EN
-                      </button>
-                    </div>
-                  </div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    {lang === 'zh' ? 'AI 智能摘要' : 'AI Summary'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -330,7 +331,7 @@ export default function ProjectDetailPage() {
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">暂无 README</p>
+                  <p className="text-sm text-muted-foreground">{lang === 'zh' ? '暂无 README' : 'No README available'}</p>
                 )}
               </CardContent>
             </Card>
@@ -340,20 +341,20 @@ export default function ProjectDetailPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  我的笔记
+                  {lang === 'zh' ? '我的笔记' : 'My Notes'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="添加你的笔记..."
+                  placeholder={lang === 'zh' ? '添加你的笔记...' : 'Add your notes...'}
                   className="w-full min-h-[120px] bg-transparent border rounded-lg p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <div className="flex justify-end mt-3">
                   <Button size="sm" onClick={saveNotes} disabled={savingNotes}>
                     {savingNotes && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    保存笔记
+                    {lang === 'zh' ? '保存笔记' : 'Save'}
                   </Button>
                 </div>
               </CardContent>
@@ -367,7 +368,7 @@ export default function ProjectDetailPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Tag className="h-5 w-5 text-primary" />
-                  标签
+                  {lang === 'zh' ? '标签' : 'Tags'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -386,12 +387,12 @@ export default function ProjectDetailPage() {
                     </Badge>
                   ))}
                   {project.tags.length === 0 && (
-                    <p className="text-sm text-muted-foreground">暂无标签</p>
+                    <p className="text-sm text-muted-foreground">{lang === 'zh' ? '暂无标签' : 'No tags'}</p>
                   )}
                 </div>
                 <div className="mt-3">
                   <Input
-                    placeholder="添加标签，回车确认..."
+                    placeholder={lang === 'zh' ? '添加标签，回车确认...' : 'Add tag, press Enter...'}
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') addTag() }}
@@ -404,24 +405,24 @@ export default function ProjectDetailPage() {
             {/* Project info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">项目信息</CardTitle>
+                <CardTitle className="text-sm">{lang === 'zh' ? '项目信息' : 'Project Info'}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Star 数</span>
+                  <span className="text-muted-foreground">{lang === 'zh' ? 'Star 数' : 'Stars'}</span>
                   <span className="font-medium">{project.stargazersCount.toLocaleString()}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">语言</span>
+                  <span className="text-muted-foreground">{lang === 'zh' ? '语言' : 'Language'}</span>
                   <span className="font-medium">{project.language || '-'}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">收藏时间</span>
+                  <span className="text-muted-foreground">{lang === 'zh' ? '收藏时间' : 'Starred At'}</span>
                   <span className="font-medium">
                     {project.starredAt
-                      ? new Date(project.starredAt).toLocaleDateString('zh-CN')
+                      ? new Date(project.starredAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US')
                       : '-'}
                   </span>
                 </div>
