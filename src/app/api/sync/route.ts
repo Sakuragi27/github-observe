@@ -5,6 +5,7 @@ import { analyzeProject } from '@/lib/ai'
 import { decrypt } from '@/lib/encrypt'
 import { requireAuth } from '@/lib/auth'
 import { checkSyncRateLimit } from '@/lib/rate-limit'
+import { generateEmbedding, buildProjectSearchText } from '@/lib/embedding'
 
 const CONCURRENCY = 3
 
@@ -128,6 +129,20 @@ export async function POST(request: NextRequest) {
                       syncedAt: new Date(),
                     },
                   })
+
+                  // Generate and store embedding
+                  const searchText = buildProjectSearchText({
+                    name: star.name,
+                    fullName: star.full_name,
+                    description: star.description,
+                    analysis: JSON.stringify(analysis),
+                    readme: readme,
+                  })
+                  const embedding = await generateEmbedding(searchText)
+                  if (embedding) {
+                    await prisma.$executeRaw`UPDATE "Project" SET "embedding" = ${JSON.stringify(embedding)}::vector WHERE "id" = ${existing.id}`
+                  }
+
                   updatedCount++
                 } else {
                   const project = await prisma.project.create({
@@ -174,6 +189,19 @@ export async function POST(request: NextRequest) {
                     } catch (tagError) {
                       console.error('Tag creation error:', (tagError as Error).message)
                     }
+                  }
+
+                  // Generate and store embedding
+                  const searchText = buildProjectSearchText({
+                    name: star.name,
+                    fullName: star.full_name,
+                    description: star.description,
+                    analysis: JSON.stringify(analysis),
+                    readme: readme,
+                  })
+                  const embedding = await generateEmbedding(searchText)
+                  if (embedding) {
+                    await prisma.$executeRaw`UPDATE "Project" SET "embedding" = ${JSON.stringify(embedding)}::vector WHERE "id" = ${project.id}`
                   }
 
                   newCount++
